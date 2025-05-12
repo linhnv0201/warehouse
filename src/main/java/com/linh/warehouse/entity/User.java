@@ -27,7 +27,6 @@ public class User {
     String phone;
     String address;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     Role role;
 
