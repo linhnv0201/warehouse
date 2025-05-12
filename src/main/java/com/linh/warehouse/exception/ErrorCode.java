@@ -14,6 +14,7 @@ public enum ErrorCode {
     USER_EXISTED(1002, "User already existed"),
     USER_NOT_EXISTED(1005, "User not existed"),
     INVALID_PASSWORD(1003, "at least 4 characters"),
+    UNAUTHENTICATED(1004, "Unauthenticated"),
     ;
      int code;
      String message;
