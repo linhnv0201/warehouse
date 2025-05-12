@@ -12,6 +12,7 @@ public enum ErrorCode {
     UNCATEGORIZED_EXCEPTION(999, "Uncategorized Exception"),
     INVALID_KEY(1001, "Invalid Message Key"),
     USER_EXISTED(1002, "User already existed"),
+    USER_NOT_EXISTED(1005, "User not existed"),
     INVALID_PASSWORD(1003, "at least 4 characters"),
     ;
      int code;
