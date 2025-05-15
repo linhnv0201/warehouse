@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
+import java.util.Set;
+
 @Getter @Setter
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -17,5 +19,5 @@ public class UserUpdateRequest {
     String fullname;
     String phone;
     String address;
-    String role;
+    Set<String> role;
 }

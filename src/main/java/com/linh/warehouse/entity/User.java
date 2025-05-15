@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.Set;
+
 @Getter
 @Setter
 @Builder
@@ -17,7 +19,7 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
 
-//    @Column(unique = true, nullable = false)
+    @Column(unique = true, nullable = false)
     String email;
 
     @Column(nullable = false)
@@ -27,10 +29,6 @@ public class User {
     String phone;
     String address;
 
-    @Column(nullable = false)
-    Role role;
+    Set<String> role;
 
-    public enum Role {
-        PURCHASER, WAREHOUSE, ACCOUNTANT, MANAGER
-    }
 }

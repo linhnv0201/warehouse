@@ -3,6 +3,8 @@ package com.linh.warehouse.dto.response;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.Set;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -15,5 +17,5 @@ public class UserResponse {
     String fullname;
     String phone;
     String address;
-    String role;
+    Set<String> role;
 }

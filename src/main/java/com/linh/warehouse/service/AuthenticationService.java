@@ -4,6 +4,7 @@ import com.linh.warehouse.dto.request.AuthenticationRequest;
 import com.linh.warehouse.dto.request.IntrospectRequest;
 import com.linh.warehouse.dto.response.AuthenticationResponse;
 import com.linh.warehouse.dto.response.IntrospectResponse;
+import com.linh.warehouse.entity.User;
 import com.linh.warehouse.exception.AppException;
 import com.linh.warehouse.exception.ErrorCode;
 import com.linh.warehouse.repository.UserRepository;
@@ -21,11 +22,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.StringJoiner;
 
 @Slf4j
 @Service
@@ -68,7 +71,7 @@ public class AuthenticationService {
 
         String token;
         try {
-            token = generateToken(request.getEmail());
+            token = generateToken(user);
         } catch (JOSEException e) {
             throw new RuntimeException(e);
         }
@@ -80,17 +83,17 @@ public class AuthenticationService {
 
     }
 
-    private String generateToken(String email) throws JOSEException {
+    private String generateToken(User user) throws JOSEException {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         JWTClaimsSet jwtClaimSet = new JWTClaimsSet.Builder()
-                .subject(email)
+                .subject(user.getEmail())
                 .issuer("vulinh")
                 .issueTime(new Date())
                 .expirationTime(new Date(
                         Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli()
                 ))
-                .claim("xxx", "xxx")
+                .claim("scope", buildScope(user))
                 .build();
 
         Payload payload = new Payload(jwtClaimSet.toJSONObject());
@@ -107,4 +110,11 @@ public class AuthenticationService {
 
         }
 
+    private String buildScope(User user){
+        StringJoiner stringJoiner = new StringJoiner(" ");
+        if (!CollectionUtils.isEmpty(user.getRole()))
+            user.getRole().forEach(stringJoiner::add);
+
+        return stringJoiner.toString();
+    }
 }
