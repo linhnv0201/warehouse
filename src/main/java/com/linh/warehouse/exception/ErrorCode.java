@@ -15,6 +15,8 @@ public enum ErrorCode {
     USER_NOT_EXISTED(1005, "User not existed"),
     INVALID_PASSWORD(1003, "at least 4 characters"),
     UNAUTHENTICATED(1004, "Unauthenticated"),
+    WAREHOUSE_EXISTED(1006, "Warehouse name already existed"),
+    WAREHOUSE_NOT_FOUND(1007, "Warehouse not found"),
     ;
      int code;
      String message;
