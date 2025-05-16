@@ -17,7 +17,7 @@ public class Supplier {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
 
-    @Column(name = "name", nullable = false, length = 255)
+    @Column(name = "name", nullable = false, unique = true, length = 255)
     String name;
 
     @Column(name = "company_email", length = 255)

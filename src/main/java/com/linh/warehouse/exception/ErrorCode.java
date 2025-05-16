@@ -17,6 +17,8 @@ public enum ErrorCode {
     UNAUTHENTICATED(1004, "Unauthenticated"),
     WAREHOUSE_EXISTED(1006, "Warehouse name already existed"),
     WAREHOUSE_NOT_FOUND(1007, "Warehouse not found"),
+    SUPPLIER_EXISTED(1008, "Supplier already existed"),
+    SUPPLIER_NOT_FOUND(1009, "Supplier not existed"),
     ;
      int code;
      String message;
