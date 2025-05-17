@@ -11,6 +11,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +26,7 @@ public class UserController {
 
     UserService userService;
 
+    @PreAuthorize("hasRole('MANAGER')")
     @PostMapping
     ApiResponse<User> createUser(@RequestBody @Valid UserCreationRequest request) {
         ApiResponse<User> apiResponse = new ApiResponse<>();
@@ -32,7 +34,7 @@ public class UserController {
         return apiResponse;
     }
 
-
+    @PreAuthorize("hasRole('MANAGER')")
     @GetMapping
     ApiResponse<List<UserResponse>> getUsers(){
         var authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -68,6 +70,7 @@ public class UserController {
         return apiResponse;
     }
 
+    @PreAuthorize("hasRole('MANAGER')")
     @DeleteMapping("/{id}")
     String deleteUser(@PathVariable Integer id) {
         userService.deleteUser(id);

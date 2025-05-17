@@ -19,6 +19,10 @@ public enum ErrorCode {
     WAREHOUSE_NOT_FOUND(1007, "Warehouse not found"),
     SUPPLIER_EXISTED(1008, "Supplier already existed"),
     SUPPLIER_NOT_FOUND(1009, "Supplier not existed"),
+    PURCHASE_ORDER_CODE_EXISTED(1010, "Purchase Order Code already existed"),
+    PURCHASE_ORDER_CODE_NOT_FOUND(1011, "Purchase Order Code not found"),
+    PURCHASE_ORDER_NOT_FOUND(1012, "Purchase Order not found"),
+    INVALID_ORDER_STATUS(1013, "Invalid Order Status"),
     ;
      int code;
      String message;

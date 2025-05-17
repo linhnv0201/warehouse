@@ -44,7 +44,4 @@ public class PurchaseOrderItem {
 
     @Column(name = "quantity")
     int quantity;
-
-    @Column(name = "created_at")
-    LocalDateTime createdAt;
 }
