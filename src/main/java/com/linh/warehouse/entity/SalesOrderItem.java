@@ -15,30 +15,24 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "sales_order_items")
 public class SalesOrderItem {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    int id;
+    private int id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sales_order_id", nullable = false)
-    SalesOrder salesOrder;
+    private SalesOrder salesOrder;
 
-    @Column(name = "product_code", length = 255)
-    String productCode;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "inventory_id", nullable = false)
+    private Inventory inventory;
 
-    @Column(name = "name", length = 255)
-    String name;
+    @Column(name = "quantity", nullable = false)
+    private int quantity;
 
-    @Column(name = "quantity")
-    int quantity;
-
-    @Column(name = "unit_price", precision = 10, scale = 2)
-    BigDecimal unitPrice;
-
-    @Column(name = "tax_rate", precision = 5, scale = 2)
-    BigDecimal taxRate;
-
-    @Column(name = "total_price", precision = 12, scale = 2)
-    BigDecimal totalPrice;
+    @Column(name = "sale_unit_price", precision = 10, scale = 2)
+    private BigDecimal saleUnitPrice;  // giá bán tại thời điểm tạo đơn, sao chép từ inventory.unit_price
 }
+
 

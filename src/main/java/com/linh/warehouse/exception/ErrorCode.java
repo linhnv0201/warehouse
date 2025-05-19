@@ -22,8 +22,12 @@ public enum ErrorCode {
     PURCHASE_ORDER_CODE_EXISTED(1010, "Purchase Order Code already existed"),
     PURCHASE_ORDER_CODE_NOT_FOUND(1011, "Purchase Order Code not found"),
     PURCHASE_ORDER_NOT_FOUND(1012, "Purchase Order not found"),
-    INVALID_ORDER_STATUS(1013, "Invalid Order Status"),
+    PURCHASE_ORDER_ITEM_NOT_FOUND(1013, "Purchase Order item not found"),
+    INVALID_ORDER_STATUS(1014, "Invalid Order Status"),
+    QUANTITY_EXCEEDS_PURCHASE_ORDER(1015, "Quantity Exceeds Purchase Order"),
+    PURCHASE_INVOICE_NOT_FOUND(1016, "Purchase Invoice not found"),
     ;
      int code;
      String message;
+
 }

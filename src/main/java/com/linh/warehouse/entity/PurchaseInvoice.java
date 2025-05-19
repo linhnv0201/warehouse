@@ -30,9 +30,6 @@ public class PurchaseInvoice {
     @Column(name = "total_amount", precision = 12, scale = 2)
     BigDecimal totalAmount;
 
-    @Column(name = "note")
-    String note;
-
     @Column(name = "status", nullable = false, length = 50)
     String status;
 

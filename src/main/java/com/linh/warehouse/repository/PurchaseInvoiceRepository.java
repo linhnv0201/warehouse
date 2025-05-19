@@ -4,7 +4,9 @@ import com.linh.warehouse.entity.PurchaseInvoice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface PurchaseInvoiceRepository extends JpaRepository<PurchaseInvoice, Integer> {
-    // You can add custom query methods if needed
+    List<PurchaseInvoice> findByReceiveOrderId(Integer receiveOrderId);
 }
