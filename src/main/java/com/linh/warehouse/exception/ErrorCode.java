@@ -26,6 +26,8 @@ public enum ErrorCode {
     INVALID_ORDER_STATUS(1014, "Invalid Order Status"),
     QUANTITY_EXCEEDS_PURCHASE_ORDER(1015, "Quantity Exceeds Purchase Order"),
     PURCHASE_INVOICE_NOT_FOUND(1016, "Purchase Invoice not found"),
+    CUSTOMER_EXISTED(1017, "Customer already existed"),
+    CUSTOMER_NOT_FOUND(1018, "Customer not found"),
     ;
      int code;
      String message;
