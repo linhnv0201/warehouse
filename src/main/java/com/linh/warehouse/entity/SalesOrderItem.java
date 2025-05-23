@@ -18,21 +18,21 @@ public class SalesOrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    int id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sales_order_id", nullable = false)
-    private SalesOrder salesOrder;
+    SalesOrder salesOrder;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "inventory_id", nullable = false)
-    private Inventory inventory;
+    Inventory inventory;
 
     @Column(name = "quantity", nullable = false)
-    private int quantity;
+    int quantity;
 
     @Column(name = "sale_unit_price", precision = 10, scale = 2)
-    private BigDecimal saleUnitPrice;  // giá bán tại thời điểm tạo đơn, sao chép từ inventory.unit_price
+    BigDecimal saleUnitPrice;
 }
 
 

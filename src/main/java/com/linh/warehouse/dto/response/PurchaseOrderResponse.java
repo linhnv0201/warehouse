@@ -13,7 +13,6 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-
 public class PurchaseOrderResponse {
     private Integer id;
     private String code;

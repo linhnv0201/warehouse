@@ -4,7 +4,10 @@ import com.linh.warehouse.entity.SalesOrder;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface SalesOrderRepository extends JpaRepository<SalesOrder, Integer> {
-    // You can add custom query methods if needed
+    boolean existsByCode(String code);
+    List<SalesOrder> findByStatusIgnoreCase(String status);
 }

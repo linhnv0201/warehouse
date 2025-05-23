@@ -28,6 +28,10 @@ public enum ErrorCode {
     PURCHASE_INVOICE_NOT_FOUND(1016, "Purchase Invoice not found"),
     CUSTOMER_EXISTED(1017, "Customer already existed"),
     CUSTOMER_NOT_FOUND(1018, "Customer not found"),
+    SALES_ORDER_CODE_EXISTED(1019, "Sales Order Code already existed"),
+    SALES_ORDER_NOT_FOUND(1020, "Sales Order not found"),
+    INVENTORY_NOT_FOUND(1021, "Inventory not found"),
+    INSUFFICIENT_INVENTORY(1022, "Insufficient Inventory"),
     ;
      int code;
      String message;

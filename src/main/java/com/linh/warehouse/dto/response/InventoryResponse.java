@@ -18,6 +18,8 @@ public class InventoryResponse {
     String productName;
     String description;
     int quantity;
+    int quantityAvailable;
+    int quantityReserved;
     String unit;
     BigDecimal unitPrice;
     BigDecimal taxRate;

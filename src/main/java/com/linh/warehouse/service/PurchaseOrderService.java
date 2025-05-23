@@ -106,14 +106,6 @@ public class PurchaseOrderService {
         return response;
     }
 
-
-//    public List<PurchaseOrderResponse> getAllPurchaseOrders() {
-//        return purchaseOrderRepository.findAll()
-//                .stream()
-//                .map(purchaseOrderMapper::toPurchaseOrderResponse)
-//                .toList();
-//    }
-
     @Transactional
     public List<PurchaseOrderResponse> getAllPurchaseOrders() {
         List<PurchaseOrder> orders = purchaseOrderRepository.findAll();
@@ -140,6 +132,7 @@ public class PurchaseOrderService {
     private List<PurchaseOrderItemResponse> convertToItemResponses(List<PurchaseOrderItem> items) {
         return items.stream().map(item -> {
             PurchaseOrderItemResponse response = new PurchaseOrderItemResponse();
+            response.setId(item.getId());
             response.setProductCode(item.getProductCode());
             response.setName(item.getName());
             response.setDescription(item.getDescription());
@@ -187,7 +180,6 @@ public class PurchaseOrderService {
 
     public List<PurchaseOrderResponse> getApprovedPurchaseOrders() {
         List<PurchaseOrder> approvedOrders = purchaseOrderRepository.findByStatus("APPROVED");
-
         return approvedOrders.stream()
                 .map(order -> {
                     PurchaseOrderResponse response = purchaseOrderMapper.toPurchaseOrderResponse(order);
