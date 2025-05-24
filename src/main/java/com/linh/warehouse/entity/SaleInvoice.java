@@ -24,8 +24,8 @@ public class SaleInvoice {
     String code;
 
     @ManyToOne
-    @JoinColumn(name = "sale_order_id", nullable = false)
-    SalesOrder salesOrder;
+    @JoinColumn(name = "delivery_order_id", nullable = false)
+    DeliveryOrder deliveryOrder;
 
     @ManyToOne
     @JoinColumn(name = "customer_id", nullable = false)

@@ -32,6 +32,11 @@ public enum ErrorCode {
     SALES_ORDER_NOT_FOUND(1020, "Sales Order not found"),
     INVENTORY_NOT_FOUND(1021, "Inventory not found"),
     INSUFFICIENT_INVENTORY(1022, "Insufficient Inventory"),
+    SALES_ORDER_ITEM_NOT_FOUND(1023, "Sales Order Item Not Found"),
+    QUANTITY_EXCEEDS_SALES_ORDER(1024, "Quantity Exceeds Sales Order"),
+    DELIVERY_ORDER_NOT_FOUND(1025, "Delivery Order not found"),
+    RECEIVE_ORDER_NOT_FOUND(1026, "Receive Order not found"),
+    SALE_INVOICE_NOT_FOUND(1027, "Sale Invoice not found"),
     ;
      int code;
      String message;

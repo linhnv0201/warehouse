@@ -176,9 +176,7 @@ public List<SalesOrderResponse> getAllSalesOrders() {
         return toSalesOrderResponse(saved, items);
     }
 
-    // ---------------------------
-    // Manual mapping method
-    // ---------------------------
+
     private SalesOrderResponse toSalesOrderResponse(SalesOrder order, List<SalesOrderItem> items) {
         SalesOrderResponse response = new SalesOrderResponse();
         response.setId(order.getId());

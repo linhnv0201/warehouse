@@ -121,4 +121,9 @@ public class ReceiveOrderService {
     private String generatePurchaseInvoiceCode() {
         return "PI-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
+
+    public ReceiveOrder getById(int id) {
+        return receiveOrderRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.RECEIVE_ORDER_NOT_FOUND));
+    }
 }

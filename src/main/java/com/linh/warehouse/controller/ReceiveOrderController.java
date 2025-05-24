@@ -5,10 +5,7 @@ import com.linh.warehouse.entity.ReceiveOrder;
 import com.linh.warehouse.service.ReceiveOrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/receive-orders")
@@ -21,6 +18,12 @@ public class ReceiveOrderController {
     public ResponseEntity<?> createReceiveOrder(@RequestBody ReceiveOrderRequest request) {
         ReceiveOrder ro = receiveOrderService.createReceiveOrder(request);
         return ResponseEntity.ok(ro);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ReceiveOrder> getById(@PathVariable int id) {
+        ReceiveOrder receiveOrder = receiveOrderService.getById(id);
+        return ResponseEntity.ok(receiveOrder);
     }
 
 
