@@ -37,6 +37,8 @@ public enum ErrorCode {
     DELIVERY_ORDER_NOT_FOUND(1025, "Delivery Order not found"),
     RECEIVE_ORDER_NOT_FOUND(1026, "Receive Order not found"),
     SALE_INVOICE_NOT_FOUND(1027, "Sale Invoice not found"),
+    PRODUCT_EXISTED(1028, "Product already existed"),
+    PRODUCT_NOT_FOUND(1029, "Product not found"),
     ;
      int code;
      String message;
