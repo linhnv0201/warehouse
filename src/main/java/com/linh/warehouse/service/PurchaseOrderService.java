@@ -17,7 +17,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,11 +37,12 @@ public class PurchaseOrderService {
     WarehouseRepository warehouseRepository;
     UserRepository userRepository;
     PurchaseOrderMapper purchaseOrderMapper;
+    ProductRepository productRepository;
 
+    ReceiveOrderItemRepository receiveOrderItemRepository;
 
     @Transactional
     public PurchaseOrderResponse createPurchaseOrder(PurchaseOrderCreationRequest request) {
-        // Lấy supplier và warehouse
         Supplier supplier = supplierRepository.findById(request.getSupplierId())
                 .orElseThrow(() -> new AppException(ErrorCode.SUPPLIER_NOT_FOUND));
 
@@ -49,99 +53,92 @@ public class PurchaseOrderService {
         User createdBy = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        // Tạo đối tượng PO
         PurchaseOrder order = new PurchaseOrder();
         order.setSupplier(supplier);
         order.setWarehouse(warehouse);
         order.setCreatedBy(createdBy);
         order.setShippingCost(request.getShippingCost());
         order.setOrderName(request.getOrderName());
-        order.setCode(request.getCode());
+        order.setCode(generatePurchaseOrderCode());
         order.setCreatedAt(LocalDateTime.now());
         order.setStatus("PENDING");
 
         PurchaseOrder savedOrder = purchaseOrderRepository.save(order);
 
-        // Chuyển danh sách item request sang entity
         List<PurchaseOrderItem> items = new ArrayList<>();
         for (PurchaseOrderItemRequest itemRequest : request.getItems()) {
+            Product product = productRepository.findById(itemRequest.getProductId())
+                    .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
             PurchaseOrderItem item = new PurchaseOrderItem();
             item.setPurchaseOrder(savedOrder);
-            item.setProductCode(itemRequest.getProductCode());
-            item.setName(itemRequest.getName());
-            item.setDescription(itemRequest.getDescription());
-            item.setUnit(itemRequest.getUnit());
-            item.setUnitPrice(itemRequest.getUnitPrice());
-            item.setTaxRate(itemRequest.getTaxRate());
+            item.setProduct(product);
+            item.setUnitPrice(product.getUnitPrice());
+            item.setTaxRate(product.getTaxRate());
             item.setQuantity(itemRequest.getQuantity());
             items.add(item);
         }
-
         purchaseOrderItemRepository.saveAll(items);
 
-        // Build response thủ công
-        List<PurchaseOrderItemResponse> itemResponses = items.stream().map(item -> {
-            PurchaseOrderItemResponse res = new PurchaseOrderItemResponse();
-            res.setProductCode(item.getProductCode());
-            res.setName(item.getName());
-            res.setDescription(item.getDescription());
-            res.setUnit(item.getUnit());
-            res.setUnitPrice(item.getUnitPrice());
-            res.setTaxRate(item.getTaxRate());
-            res.setQuantity(item.getQuantity());
-            return res;
-        }).collect(Collectors.toList());
+        List<PurchaseOrderItem> savedItems = purchaseOrderItemRepository.findByPurchaseOrderId(savedOrder.getId());
+        List<PurchaseOrderItemResponse> itemResponses = savedItems.stream()
+                .map(this::mapToItemResponse)
+                .collect(Collectors.toList());
 
-        PurchaseOrderResponse response = new PurchaseOrderResponse();
-        response.setId(savedOrder.getId());
-        response.setCode(savedOrder.getCode());
-        response.setOrderName(savedOrder.getOrderName());
-        response.setShippingCost(savedOrder.getShippingCost());
-        response.setStatus(savedOrder.getStatus());
-        response.setCreatedAt(savedOrder.getCreatedAt());
-        response.setSupplierName(supplier.getName());
-        response.setWarehouseName(warehouse.getName());
+        PurchaseOrderResponse response = purchaseOrderMapper.toPurchaseOrderResponse(savedOrder);
         response.setItems(itemResponses);
 
         return response;
     }
 
+    private PurchaseOrderItemResponse mapToItemResponse(PurchaseOrderItem item) {
+        int received = receiveOrderItemRepository.getTotalReceivedQuantity(item.getId());
+        int remaining = item.getQuantity() - received;
+        BigDecimal totalPrice = item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+
+        return PurchaseOrderItemResponse.builder()
+                .id(item.getId())
+                .productId(item.getProduct().getId().intValue())
+                .productCode(item.getProduct().getCode())
+                .productName(item.getProduct().getName())
+                .quantity(item.getQuantity())
+                .remainingQuantity(remaining)
+                .unitPrice(item.getUnitPrice())
+                .totalPrice(totalPrice)
+                .build();
+    }
+
+    private String generatePurchaseOrderCode() {
+        String prefix = "PO-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-";
+
+        long countToday = purchaseOrderRepository.countByCreatedAtBetween(
+                LocalDate.now().atStartOfDay(),
+                LocalDate.now().plusDays(1).atStartOfDay()
+        );
+
+        return prefix + String.format("%03d", countToday + 1);
+    }
+
     @Transactional
     public List<PurchaseOrderResponse> getAllPurchaseOrders() {
         List<PurchaseOrder> orders = purchaseOrderRepository.findAll();
-
-        return orders.stream().map(order -> {
-            PurchaseOrderResponse response = new PurchaseOrderResponse();
-            response.setId(order.getId());
-            response.setCode(order.getCode());
-            response.setOrderName(order.getOrderName());
-            response.setShippingCost(order.getShippingCost());
-            response.setStatus(order.getStatus());
-            response.setCreatedAt(order.getCreatedAt());
-            response.setSupplierName(order.getSupplier() != null ? order.getSupplier().getName() : null);
-            response.setWarehouseName(order.getWarehouse() != null ? order.getWarehouse().getName() : null);
-
-            List<PurchaseOrderItem> items = purchaseOrderItemRepository.findByPurchaseOrderId(order.getId());
-            List<PurchaseOrderItemResponse> itemResponses = convertToItemResponses(items);
-            response.setItems(itemResponses);
-
-            return response;
-        }).toList();
+        return getPurchaseOrderResponses(orders);
     }
 
-    private List<PurchaseOrderItemResponse> convertToItemResponses(List<PurchaseOrderItem> items) {
-        return items.stream().map(item -> {
-            PurchaseOrderItemResponse response = new PurchaseOrderItemResponse();
-            response.setId(item.getId());
-            response.setProductCode(item.getProductCode());
-            response.setName(item.getName());
-            response.setDescription(item.getDescription());
-            response.setUnit(item.getUnit());
-            response.setUnitPrice(item.getUnitPrice());
-            response.setTaxRate(item.getTaxRate());
-            response.setQuantity(item.getQuantity());
-            return response;
-        }).toList();
+    private List<PurchaseOrderResponse> getPurchaseOrderResponses(List<PurchaseOrder> orders) {
+        return orders.stream().map(this::getPurchaseOrderResponse).collect(Collectors.toList());
+    }
+
+    private PurchaseOrderResponse getPurchaseOrderResponse(PurchaseOrder order) {
+        PurchaseOrderResponse response = purchaseOrderMapper.toPurchaseOrderResponse(order);
+        List<PurchaseOrderItem> items = purchaseOrderItemRepository.findByPurchaseOrderId(order.getId());
+
+        List<PurchaseOrderItemResponse> itemResponses = items.stream()
+                .map(this::mapToItemResponse)
+                .collect(Collectors.toList());
+
+        response.setItems(itemResponses);
+        return response;
     }
 
     @Transactional
@@ -163,39 +160,21 @@ public class PurchaseOrderService {
                 order.setApprovedBy(currentUser);
                 order.setApprovedAt(LocalDateTime.now());
                 break;
-
             case "CANCELLED":
                 order.setStatus("CANCELLED");
                 order.setApprovedBy(null);
                 order.setApprovedAt(null);
                 break;
-
             default:
                 throw new AppException(ErrorCode.INVALID_ORDER_STATUS);
         }
 
         PurchaseOrder saved = purchaseOrderRepository.save(order);
-        return purchaseOrderMapper.toPurchaseOrderResponse(saved);
+        return getPurchaseOrderResponse(saved);
     }
 
     public List<PurchaseOrderResponse> getApprovedPurchaseOrders() {
         List<PurchaseOrder> approvedOrders = purchaseOrderRepository.findByStatus("APPROVED");
-        return approvedOrders.stream()
-                .map(order -> {
-                    PurchaseOrderResponse response = purchaseOrderMapper.toPurchaseOrderResponse(order);
-
-                    // Gắn thêm item nếu cần
-                    List<PurchaseOrderItem> items = purchaseOrderItemRepository.findByPurchaseOrderId(order.getId());
-                    List<PurchaseOrderItemResponse> itemResponses = items.stream()
-                            .map(purchaseOrderMapper::toItemResponse)
-                            .toList();
-
-                    response.setItems(itemResponses);
-                    return response;
-                })
-                .toList();
+        return getPurchaseOrderResponses(approvedOrders);
     }
-
-
-
 }

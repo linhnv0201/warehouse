@@ -6,6 +6,7 @@ import com.linh.warehouse.entity.*;
 import com.linh.warehouse.exception.AppException;
 import com.linh.warehouse.exception.ErrorCode;
 import com.linh.warehouse.repository.*;
+import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -101,6 +102,8 @@ public class DeliveryOrderService {
         invoice.setCreatedAt(LocalDateTime.now());
         saleInvoiceRepository.save(invoice);
 
+        updateOrderStatusIfCompleted(deliveryOrder.getId());
+
         return deliveryOrder;
     }
 
@@ -117,5 +120,27 @@ public class DeliveryOrderService {
         return deliveryOrderRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.DELIVERY_ORDER_NOT_FOUND));
     }
+    @Transactional
+    public void updateOrderStatusIfCompleted(Integer deliveryOrderId) {
+        // Lấy tất cả SalesOrderItem theo SalesOrder của DeliveryOrder
+        DeliveryOrder deliveryOrder = deliveryOrderRepository.findById(deliveryOrderId)
+                .orElseThrow(() -> new AppException(ErrorCode.DELIVERY_ORDER_NOT_FOUND));
+
+        List<SalesOrderItem> items = salesOrderItemRepository.findBySalesOrderId(deliveryOrder.getSalesOrder().getId());
+
+        boolean allDelivered = items.stream().allMatch(item -> {
+            Integer delivered = deliveryOrderItemRepository.getTotalDeliveredQuantity(item.getId());
+            return (item.getQuantity() - delivered) <= 0;
+        });
+
+        if (allDelivered) {
+            if (!"COMPLETED".equals(deliveryOrder.getStatus())) {
+                deliveryOrder.setStatus("COMPLETED");
+                deliveryOrderRepository.save(deliveryOrder);
+                log.info("Delivery order {} marked as COMPLETED because all items are fully delivered.", deliveryOrderId);
+            }
+        }
+    }
+
 
 }

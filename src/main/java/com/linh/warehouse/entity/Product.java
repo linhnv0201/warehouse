@@ -35,7 +35,7 @@ public class Product {
     private BigDecimal unitPrice;
 
     @Column(name = "tax_rate", precision = 5, scale = 2)
-    private BigDecimal defaultTaxRate;
+    private BigDecimal taxRate;
 
     @ManyToOne
     @JoinColumn(name = "supplier_id")

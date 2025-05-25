@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -50,6 +51,14 @@ public class PurchaseInvoicePaymentService {
         payment.setNote(request.getNote());
         payment.setCreatedBy(user);
 
+        // Kiểm tra xem hóa đơn đã trả đủ tiền chưa
+        boolean paidInFull = checkIfInvoicePaidInFull(invoice.getId());
+        if (paidInFull && !"PAID".equals(invoice.getStatus())) {
+            invoice.setStatus("PAID");
+            purchaseInvoiceRepository.save(invoice);
+            log.info("Purchase invoice {} marked as PAID because payment is full.", invoice.getId());
+        }
+
         return paymentRepository.save(payment);
     }
 
@@ -73,5 +82,19 @@ public class PurchaseInvoicePaymentService {
         long count = paymentRepository.count();
         return prefix + String.format("%03d", count + 1);
     }
+    public boolean checkIfInvoicePaidInFull(Integer invoiceId) {
+        PurchaseInvoice invoice = purchaseInvoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new AppException(ErrorCode.PURCHASE_INVOICE_NOT_FOUND));
+
+        // Tổng số tiền đã thanh toán trên hóa đơn này
+        BigDecimal totalPaid = paymentRepository.getTotalPaidAmountByInvoiceId(invoiceId);
+        if (totalPaid == null) {
+            totalPaid = BigDecimal.ZERO;
+        }
+
+        // So sánh tổng đã trả với tổng tiền hóa đơn
+        return totalPaid.compareTo(invoice.getTotalAmount()) >= 0;
+    }
+
 }
 

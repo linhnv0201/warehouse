@@ -5,7 +5,6 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -16,6 +15,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "purchase_order_items")
 public class PurchaseOrderItem {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
@@ -24,24 +24,16 @@ public class PurchaseOrderItem {
     @JoinColumn(name = "purchase_order_id", nullable = false)
     PurchaseOrder purchaseOrder;
 
-    @Column(name = "product_code", length = 255)
-    String productCode;
-
-    @Column(name = "name", length = 255)
-    String name;
-
-    @Column(name = "description")
-    String description;
-
-    @Column(name = "unit", length = 50)
-    String unit;
+    @ManyToOne
+    @JoinColumn(name = "product_id", nullable = false)
+    Product product;
 
     @Column(name = "unit_price", precision = 10, scale = 2)
-    BigDecimal unitPrice;
+    BigDecimal unitPrice;  // Lưu giá tại thời điểm đặt hàng
 
     @Column(name = "tax_rate", precision = 5, scale = 2)
-    BigDecimal taxRate;
+    BigDecimal taxRate;    // Lưu thuế tại thời điểm đặt hàng
 
-    @Column(name = "quantity")
+    @Column(name = "quantity", nullable = false)
     int quantity;
 }

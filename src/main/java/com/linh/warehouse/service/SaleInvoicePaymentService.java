@@ -16,6 +16,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -33,6 +34,7 @@ public class SaleInvoicePaymentService {
     SaleInvoicePaymentRepository paymentRepository;
     UserRepository userRepository;
 
+    @Transactional
     public SaleInvoicePayment createPayment(SaleInvoicePaymentRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(email)
@@ -50,7 +52,16 @@ public class SaleInvoicePaymentService {
         payment.setNote(request.getNote());
         payment.setCreatedBy(user);
 
-        return paymentRepository.save(payment);
+        payment = paymentRepository.save(payment);
+
+        // Kiểm tra xem hóa đơn đã thanh toán đủ chưa, nếu đủ thì cập nhật trạng thái
+        if (checkIfInvoicePaidInFull(invoice.getId()) && !"PAID".equals(invoice.getStatus())) {
+            invoice.setStatus("PAID");
+            saleInvoiceRepository.save(invoice);
+            log.info("Sale invoice {} marked as PAID because payment is full.", invoice.getId());
+        }
+
+        return payment;
     }
 
     public List<SaleInvoicePaymentResponse> getPaymentsByInvoiceId(int invoiceId) {
@@ -66,6 +77,18 @@ public class SaleInvoicePaymentService {
             res.setCreatedByEmail(p.getCreatedBy().getEmail());
             return res;
         }).collect(Collectors.toList());
+    }
+
+    public boolean checkIfInvoicePaidInFull(int invoiceId) {
+        SaleInvoice invoice = saleInvoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new AppException(ErrorCode.SALE_INVOICE_NOT_FOUND));
+
+        Double totalPaid = paymentRepository.getTotalPaidAmountByInvoiceId(invoiceId);
+        if (totalPaid == null) {
+            totalPaid = 0.0;
+        }
+
+        return totalPaid >= invoice.getTotalAmount().doubleValue();
     }
 
     private String generatePaymentCode() {
