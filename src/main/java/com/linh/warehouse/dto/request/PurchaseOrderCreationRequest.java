@@ -27,9 +27,6 @@ public class PurchaseOrderCreationRequest {
     @NotBlank(message = "orderName không được để trống")
     private String orderName;
 
-    @NotNull(message = "shippingCost không được để trống")
-    private BigDecimal shippingCost;
-
     @NotEmpty(message = "Danh sách món hàng không được để trống")
     private List<PurchaseOrderItemRequest> items;
 }

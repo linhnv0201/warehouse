@@ -2,6 +2,7 @@ package com.linh.warehouse.repository;
 
 import com.linh.warehouse.entity.Inventory;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -12,5 +13,7 @@ public interface InventoryRepository extends JpaRepository<Inventory, Integer> {
     List<Inventory> findByWarehouseId(Integer warehouseId);
     Optional<Inventory> findByWarehouseIdAndProductCode(Integer warehouseId, String productCode);
     List<Inventory> findByProductCode(String productCode);
+    @Query("SELECT SUM(i.quantity) FROM Inventory i")
+    Long getTotalStock();
 
 }

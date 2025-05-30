@@ -14,15 +14,16 @@ import java.util.List;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PurchaseOrderResponse {
-    private Integer id;
-    private String code;
-    private String orderName;
-    private BigDecimal shippingCost;
-    private String status;
-    private LocalDateTime createdAt;
+    Integer id;
+    String code;
+    String orderName;
+    String status;
+    LocalDateTime createdAt;
+    String createdBy;
 
-    private String supplierName;
-    private String warehouseName;
+    String supplierName;
+    String warehouseName;
+    BigDecimal totalPrice;
 
     private List<PurchaseOrderItemResponse> items;
 }

@@ -1,11 +1,13 @@
 package com.linh.warehouse.controller;
 
+import com.linh.warehouse.dto.request.ApiResponse;
 import com.linh.warehouse.dto.request.ReceiveOrderRequest;
 import com.linh.warehouse.entity.ReceiveOrder;
 import com.linh.warehouse.service.ReceiveOrderService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/receive-orders")
@@ -14,17 +16,32 @@ public class ReceiveOrderController {
 
     private final ReceiveOrderService receiveOrderService;
 
-    @PostMapping
-    public ResponseEntity<?> createReceiveOrder(@RequestBody ReceiveOrderRequest request) {
-        ReceiveOrder ro = receiveOrderService.createReceiveOrder(request);
-        return ResponseEntity.ok(ro);
+    @PostMapping("/{purchaseOrderId}")
+    public ApiResponse<ReceiveOrder> createReceiveOrder(
+            @PathVariable Integer purchaseOrderId,
+            @RequestBody ReceiveOrderRequest request) {
+        ReceiveOrder ro = receiveOrderService.createReceiveOrder(purchaseOrderId, request);
+        return ApiResponse.<ReceiveOrder>builder()
+                .message("Tạo phiếu nhập kho thành công")
+                .result(ro)
+                .build();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ReceiveOrder> getById(@PathVariable int id) {
+    public ApiResponse<ReceiveOrder> getById(@PathVariable int id) {
         ReceiveOrder receiveOrder = receiveOrderService.getById(id);
-        return ResponseEntity.ok(receiveOrder);
+        return ApiResponse.<ReceiveOrder>builder()
+                .message("Lấy phiếu nhập kho thành công")
+                .result(receiveOrder)
+                .build();
     }
 
-
+    @GetMapping("/by-purchase-order/{purchaseOrderId}")
+    public ApiResponse<List<ReceiveOrder>> getROByPOId(@PathVariable Integer purchaseOrderId) {
+        List<ReceiveOrder> orders = receiveOrderService.getByPurchaseOrderId(purchaseOrderId);
+        return ApiResponse.<List<ReceiveOrder>>builder()
+                .message("Lấy danh sách phiếu nhập kho theo đơn mua thành công")
+                .result(orders)
+                .build();
+    }
 }

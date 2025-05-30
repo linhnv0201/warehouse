@@ -38,13 +38,17 @@ public class WarehouseService {
         Warehouse warehouse = warehouseRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.WAREHOUSE_NOT_FOUND));
 
-        if (warehouseRepository.existsByName(request.getName())) {
-            throw new AppException(ErrorCode.WAREHOUSE_EXISTED);
+        String newName = request.getName();
+        if (newName != null && !newName.trim().isEmpty() && !newName.equals(warehouse.getName())) {
+            if (warehouseRepository.existsByName(newName)) {
+                throw new AppException(ErrorCode.WAREHOUSE_EXISTED);
+            }
         }
 
         warehouseMapper.updateWarehouse(warehouse, request);
         return warehouseMapper.toWarehouseResponse(warehouseRepository.save(warehouse));
     }
+
 
     public WarehouseResponse getWarehouse(Integer id) {
         Warehouse warehouse = warehouseRepository.findById(id)

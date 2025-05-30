@@ -12,11 +12,14 @@ import org.mapstruct.MappingTarget;
 public interface ProductMapper {
 
     @Mapping(target = "supplier.id", source = "supplierId")
+    @Mapping(target = "taxRate", source = "taxRate")  // map từ DTO taxRate -> entity taxRate
     Product toProduct(ProductCreationRequest request);
 
     @Mapping(target = "supplierId", source = "supplier.id")
     @Mapping(target = "supplierName", source = "supplier.name")
+    @Mapping(target = "taxRate", source = "taxRate") // map entity -> response
     ProductResponse toProductResponse(Product product);
 
     void updateProduct(@MappingTarget Product product, ProductUpdateRequest request);
 }
+

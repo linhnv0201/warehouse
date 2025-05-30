@@ -17,7 +17,7 @@ public class ProductUpdateRequest {
     String description;
     String unit;
     BigDecimal unitPrice;
-    BigDecimal defaultTaxRate;
+    BigDecimal taxRate;
     Integer supplierId;
 }
 

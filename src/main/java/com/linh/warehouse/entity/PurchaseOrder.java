@@ -29,7 +29,7 @@ public class PurchaseOrder {
     Warehouse warehouse;
 
     @ManyToOne
-    @JoinColumn(name = "created_by", nullable = false)
+    @JoinColumn(name = "created_by", nullable = false, updatable = false)
     User createdBy;
 
     @ManyToOne
@@ -39,9 +39,6 @@ public class PurchaseOrder {
     @Column(name = "approved_at")
     LocalDateTime approvedAt;
 
-    @Column(name = "shipping_cost", precision = 10, scale = 2)
-    BigDecimal shippingCost;
-
     @Column(name = "order_name", length = 255)
     String orderName;
 
@@ -50,6 +47,9 @@ public class PurchaseOrder {
 
     @Column(name = "created_at")
     LocalDateTime createdAt;
+
+    @Column(name = "total_price")
+    BigDecimal totalPrice;
 
     @Column(name = "status", nullable = false, length = 50)
     String status;

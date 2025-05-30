@@ -19,6 +19,8 @@ public class PurchaseOrderItemResponse {
     Integer quantity;
     Integer remainingQuantity;
     BigDecimal unitPrice;
+    BigDecimal taxRate;
     BigDecimal totalPrice;
+
 }
 

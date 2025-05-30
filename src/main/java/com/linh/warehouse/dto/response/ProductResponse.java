@@ -19,7 +19,7 @@ public class ProductResponse {
     String description;
     String unit;
     BigDecimal unitPrice;
-    BigDecimal defaultTaxRate;
+    BigDecimal taxRate;
     Integer supplierId;
     String supplierName;
     LocalDateTime createdAt;

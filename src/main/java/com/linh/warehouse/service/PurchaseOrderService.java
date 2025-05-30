@@ -7,7 +7,6 @@ import com.linh.warehouse.dto.response.PurchaseOrderResponse;
 import com.linh.warehouse.entity.*;
 import com.linh.warehouse.exception.AppException;
 import com.linh.warehouse.exception.ErrorCode;
-import com.linh.warehouse.mapper.PurchaseOrderMapper;
 import com.linh.warehouse.repository.*;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
@@ -36,9 +35,7 @@ public class PurchaseOrderService {
     SupplierRepository supplierRepository;
     WarehouseRepository warehouseRepository;
     UserRepository userRepository;
-    PurchaseOrderMapper purchaseOrderMapper;
     ProductRepository productRepository;
-
     ReceiveOrderItemRepository receiveOrderItemRepository;
 
     @Transactional
@@ -57,13 +54,10 @@ public class PurchaseOrderService {
         order.setSupplier(supplier);
         order.setWarehouse(warehouse);
         order.setCreatedBy(createdBy);
-        order.setShippingCost(request.getShippingCost());
         order.setOrderName(request.getOrderName());
         order.setCode(generatePurchaseOrderCode());
         order.setCreatedAt(LocalDateTime.now());
         order.setStatus("PENDING");
-
-        PurchaseOrder savedOrder = purchaseOrderRepository.save(order);
 
         List<PurchaseOrderItem> items = new ArrayList<>();
         for (PurchaseOrderItemRequest itemRequest : request.getItems()) {
@@ -71,22 +65,47 @@ public class PurchaseOrderService {
                     .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
 
             PurchaseOrderItem item = new PurchaseOrderItem();
-            item.setPurchaseOrder(savedOrder);
+            item.setPurchaseOrder(order);
             item.setProduct(product);
             item.setUnitPrice(product.getUnitPrice());
             item.setTaxRate(product.getTaxRate());
             item.setQuantity(itemRequest.getQuantity());
             items.add(item);
         }
+
+        BigDecimal totalPrice = calculateTotalAmount(items);
+        order.setTotalPrice(totalPrice);
+
+        PurchaseOrder savedOrder = purchaseOrderRepository.save(order);
         purchaseOrderItemRepository.saveAll(items);
 
         List<PurchaseOrderItem> savedItems = purchaseOrderItemRepository.findByPurchaseOrderId(savedOrder.getId());
-        List<PurchaseOrderItemResponse> itemResponses = savedItems.stream()
+
+        return mapToPurchaseOrderResponse(savedOrder, savedItems, totalPrice);
+    }
+
+    private PurchaseOrderResponse mapToPurchaseOrderResponse(PurchaseOrder order, List<PurchaseOrderItem> items, BigDecimal totalPrice) {
+        PurchaseOrderResponse response = new PurchaseOrderResponse();
+        response.setId(order.getId());
+        response.setCode(order.getCode());
+        response.setOrderName(order.getOrderName());
+        response.setCreatedAt(order.getCreatedAt());
+        response.setStatus(order.getStatus());
+
+        // Map tên Supplier và Warehouse
+        response.setSupplierName(order.getSupplier() != null ? order.getSupplier().getName() : null);
+        response.setWarehouseName(order.getWarehouse() != null ? order.getWarehouse().getName() : null);
+
+        // Map tên người tạo (createdBy)
+        response.setCreatedBy(order.getCreatedBy() != null ? order.getCreatedBy().getFullname() : null);
+
+        // Map items
+        List<PurchaseOrderItemResponse> itemResponses = items.stream()
                 .map(this::mapToItemResponse)
                 .collect(Collectors.toList());
-
-        PurchaseOrderResponse response = purchaseOrderMapper.toPurchaseOrderResponse(savedOrder);
         response.setItems(itemResponses);
+
+        response.setTotalPrice(totalPrice);
 
         return response;
     }
@@ -104,6 +123,7 @@ public class PurchaseOrderService {
                 .quantity(item.getQuantity())
                 .remainingQuantity(remaining)
                 .unitPrice(item.getUnitPrice())
+                .taxRate(item.getTaxRate())
                 .totalPrice(totalPrice)
                 .build();
     }
@@ -122,24 +142,26 @@ public class PurchaseOrderService {
     @Transactional
     public List<PurchaseOrderResponse> getAllPurchaseOrders() {
         List<PurchaseOrder> orders = purchaseOrderRepository.findAll();
-        return getPurchaseOrderResponses(orders);
-    }
-
-    private List<PurchaseOrderResponse> getPurchaseOrderResponses(List<PurchaseOrder> orders) {
-        return orders.stream().map(this::getPurchaseOrderResponse).collect(Collectors.toList());
-    }
-
-    private PurchaseOrderResponse getPurchaseOrderResponse(PurchaseOrder order) {
-        PurchaseOrderResponse response = purchaseOrderMapper.toPurchaseOrderResponse(order);
-        List<PurchaseOrderItem> items = purchaseOrderItemRepository.findByPurchaseOrderId(order.getId());
-
-        List<PurchaseOrderItemResponse> itemResponses = items.stream()
-                .map(this::mapToItemResponse)
+        return orders.stream()
+                .map(order -> {
+                    List<PurchaseOrderItem> items = purchaseOrderItemRepository.findByPurchaseOrderId(order.getId());
+                    BigDecimal totalPrice = calculateTotalAmount(items);
+                    return mapToPurchaseOrderResponse(order, items, totalPrice);
+                })
                 .collect(Collectors.toList());
-
-        response.setItems(itemResponses);
-        return response;
     }
+
+    @Transactional
+    public PurchaseOrderResponse getPurchaseOrderById(Integer orderId) {
+        PurchaseOrder order = purchaseOrderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.PURCHASE_ORDER_NOT_FOUND));
+
+        List<PurchaseOrderItem> items = purchaseOrderItemRepository.findByPurchaseOrderId(order.getId());
+        BigDecimal totalPrice = calculateTotalAmount(items);
+
+        return mapToPurchaseOrderResponse(order, items, totalPrice);
+    }
+
 
     @Transactional
     public PurchaseOrderResponse changePurchaseOrderStatus(Integer orderId, String newStatus) {
@@ -170,11 +192,34 @@ public class PurchaseOrderService {
         }
 
         PurchaseOrder saved = purchaseOrderRepository.save(order);
-        return getPurchaseOrderResponse(saved);
+
+        List<PurchaseOrderItem> items = purchaseOrderItemRepository.findByPurchaseOrderId(saved.getId());
+        BigDecimal totalPrice = calculateTotalAmount(items);
+        return mapToPurchaseOrderResponse(saved, items, totalPrice);
     }
 
     public List<PurchaseOrderResponse> getApprovedPurchaseOrders() {
         List<PurchaseOrder> approvedOrders = purchaseOrderRepository.findByStatus("APPROVED");
-        return getPurchaseOrderResponses(approvedOrders);
+        return approvedOrders.stream()
+                .map(order -> {
+                    List<PurchaseOrderItem> items = purchaseOrderItemRepository.findByPurchaseOrderId(order.getId());
+                    BigDecimal totalPrice = calculateTotalAmount(items);
+                    return mapToPurchaseOrderResponse(order, items, totalPrice);
+                })
+                .collect(Collectors.toList());
+    }
+
+    public BigDecimal calculateTotalAmount(List<PurchaseOrderItem> items) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (PurchaseOrderItem item : items) {
+            BigDecimal unitPrice = item.getUnitPrice() != null ? item.getUnitPrice() : BigDecimal.ZERO;
+            BigDecimal quantity = BigDecimal.valueOf(item.getQuantity());
+            BigDecimal taxRate = item.getTaxRate() != null ? item.getTaxRate() : BigDecimal.ZERO;
+
+            BigDecimal itemTotal = unitPrice.multiply(quantity);
+            BigDecimal taxAmount = itemTotal.multiply(taxRate.divide(BigDecimal.valueOf(100)));
+            total = total.add(itemTotal.add(taxAmount));
+        }
+        return total;
     }
 }

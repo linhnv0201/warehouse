@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -32,5 +33,8 @@ public class ReceiveOrder {
 
     @Column(name = "created_at")
     LocalDateTime createdAt;
+
+    @Column(name = "shipping_cost", precision = 10, scale = 2)
+    BigDecimal shippingCost;
 }
 
