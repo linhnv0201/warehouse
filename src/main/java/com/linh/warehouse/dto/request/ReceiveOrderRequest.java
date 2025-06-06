@@ -15,7 +15,6 @@ import java.util.List;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ReceiveOrderRequest {
-     int purchaseOrderId;
      private BigDecimal shippingCost;
      List<ReceiveOrderItemRequest> items;
 }

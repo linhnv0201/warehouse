@@ -15,10 +15,8 @@ import java.util.List;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SalesOrderCreationRequest {
-    String code;
     Integer warehouseId;
     Integer customerId;
-    String shippingMethod;
     String note;
     List<SalesOrderItemRequest> items;
 }

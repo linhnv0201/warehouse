@@ -2,6 +2,7 @@ package com.linh.warehouse.controller;
 
 import com.linh.warehouse.dto.request.ApiResponse;
 import com.linh.warehouse.dto.request.ReceiveOrderRequest;
+import com.linh.warehouse.dto.response.ReceiveOrderResponse;
 import com.linh.warehouse.entity.ReceiveOrder;
 import com.linh.warehouse.service.ReceiveOrderService;
 import lombok.RequiredArgsConstructor;
@@ -17,20 +18,20 @@ public class ReceiveOrderController {
     private final ReceiveOrderService receiveOrderService;
 
     @PostMapping("/{purchaseOrderId}")
-    public ApiResponse<ReceiveOrder> createReceiveOrder(
+    public ApiResponse<ReceiveOrderResponse> createReceiveOrder(
             @PathVariable Integer purchaseOrderId,
             @RequestBody ReceiveOrderRequest request) {
-        ReceiveOrder ro = receiveOrderService.createReceiveOrder(purchaseOrderId, request);
-        return ApiResponse.<ReceiveOrder>builder()
+        ReceiveOrderResponse ro = receiveOrderService.createReceiveOrder(purchaseOrderId, request);
+        return ApiResponse.<ReceiveOrderResponse>builder()
                 .message("Tạo phiếu nhập kho thành công")
                 .result(ro)
                 .build();
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<ReceiveOrder> getById(@PathVariable int id) {
-        ReceiveOrder receiveOrder = receiveOrderService.getById(id);
-        return ApiResponse.<ReceiveOrder>builder()
+    public ApiResponse<ReceiveOrderResponse> getById(@PathVariable int id) {
+        ReceiveOrderResponse receiveOrder = receiveOrderService.getById(id);
+        return ApiResponse.<ReceiveOrderResponse>builder()
                 .message("Lấy phiếu nhập kho thành công")
                 .result(receiveOrder)
                 .build();

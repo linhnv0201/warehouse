@@ -3,6 +3,7 @@ package com.linh.warehouse.dto.response;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -12,19 +13,12 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class SalesOrderResponse {
+public class ReceiveOrderResponse {
     Integer id;
     String code;
-    String warehouseName;
-    String customerName;
-    String note;
-    String status;
     String createdBy;
     LocalDateTime createdAt;
-    String approvedBy;
-    LocalDateTime approvedAt;
-
-    List<SalesOrderItemResponse> items;
-
+    BigDecimal shippingCost;
+    BigDecimal totalAmount;
+    List<ReceiveOrderItemResponse> items;
 }
-

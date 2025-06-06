@@ -9,9 +9,6 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -20,25 +17,30 @@ public class PurchaseInvoiceService {
 
     private final PurchaseInvoiceRepository purchaseInvoiceRepository;
 
-    public List<PurchaseInvoiceResponse> getInvoicesByReceiveOrderId(Integer receiveOrderId) {
-        List<PurchaseInvoice> invoices = purchaseInvoiceRepository.findByReceiveOrderId(receiveOrderId);
-        return invoices.stream().map(invoice -> {
-            PurchaseInvoiceResponse response = new PurchaseInvoiceResponse();
-            response.setId(invoice.getId());
-            response.setCode(invoice.getCode());
-            response.setTotalAmount(invoice.getTotalAmount());
-            response.setStatus(invoice.getStatus());
-            response.setCreatedAt(invoice.getCreatedAt());
+    public PurchaseInvoiceResponse getInvoiceByReceiveOrderId(Integer receiveOrderId) {
+        PurchaseInvoice invoice = purchaseInvoiceRepository.findByReceiveOrderId(receiveOrderId);
 
-            ReceiveOrder ro = invoice.getReceiveOrder();
+        PurchaseInvoiceResponse response = new PurchaseInvoiceResponse();
+        response.setId(invoice.getId());
+        response.setCode(invoice.getCode());
+        response.setTotalAmount(invoice.getTotalAmount());
+        response.setStatus(invoice.getStatus());
+        response.setCreatedAt(invoice.getCreatedAt());
+
+        ReceiveOrder ro = invoice.getReceiveOrder();
+        if (ro != null) {
             response.setReceiveOrderCode(ro.getCode());
 
             // Lấy supplier từ PO
-            Supplier supplier = ro.getPurchaseOrder().getSupplier();
-            response.setSupplierName(supplier != null ? supplier.getName() : null);
+            PurchaseOrder po = ro.getPurchaseOrder();
+            if (po != null && po.getSupplier() != null) {
+                response.setSupplierName(po.getSupplier().getName());
+            } else {
+                response.setSupplierName(null);
+            }
+        }
 
-            return response;
-        }).collect(Collectors.toList());
+        return response;
     }
 
 

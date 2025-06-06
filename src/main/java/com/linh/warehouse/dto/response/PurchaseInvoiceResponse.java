@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 public class PurchaseInvoiceResponse {
     int id;
     String code;
+    BigDecimal totalPaid;
     BigDecimal totalAmount;
     String status;
     LocalDateTime createdAt;

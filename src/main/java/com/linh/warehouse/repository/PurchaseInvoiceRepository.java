@@ -6,13 +6,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
-
 @Repository
 public interface PurchaseInvoiceRepository extends JpaRepository<PurchaseInvoice, Integer> {
-    List<PurchaseInvoice> findByReceiveOrderId(Integer receiveOrderId);
+    PurchaseInvoice findByReceiveOrderId(Integer receiveOrderId);
 
 //    @Query("SELECT SUM(i.totalAmount) FROM PurchaseInvoice i WHERE i.createdAt BETWEEN :from AND :to")
 //    BigDecimal getTotalPurchaseCost(@Param("from") LocalDate from, @Param("to") LocalDate to);

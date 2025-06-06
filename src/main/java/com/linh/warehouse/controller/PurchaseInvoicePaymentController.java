@@ -1,12 +1,16 @@
 package com.linh.warehouse.controller;
 
+import com.linh.warehouse.dto.request.ApiResponse;
 import com.linh.warehouse.dto.request.PurchaseInvoicePaymentRequest;
+import com.linh.warehouse.dto.response.PurchaseInvoicePaymentResponse;
 import com.linh.warehouse.service.PurchaseInvoicePaymentService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/payments")
@@ -16,15 +20,28 @@ public class PurchaseInvoicePaymentController {
 
     final PurchaseInvoicePaymentService paymentService;
 
-    @PostMapping
-    public ResponseEntity<?> createPayment(@RequestBody PurchaseInvoicePaymentRequest request) {
-        return ResponseEntity.ok(paymentService.createPayment(request));
+    @PostMapping("/{id}")
+    public ApiResponse<PurchaseInvoicePaymentResponse> createPayment(
+            @PathVariable Integer id,
+            @RequestBody PurchaseInvoicePaymentRequest request
+    ) {
+        PurchaseInvoicePaymentResponse response = paymentService.createPayment(id, request);
+        return ApiResponse.<PurchaseInvoicePaymentResponse>builder()
+                .message("Tạo thanh toán thành công")
+                .result(response)
+                .build();
     }
 
     @GetMapping("/by-invoice/{invoiceId}")
-    public ResponseEntity<?> getPaymentsByInvoice(@PathVariable int invoiceId) {
-        return ResponseEntity.ok(paymentService.getPaymentsByInvoiceId(invoiceId));
+    public ApiResponse<List<PurchaseInvoicePaymentResponse>> getPaymentsByInvoice(@PathVariable int invoiceId) {
+        List<PurchaseInvoicePaymentResponse> payments = paymentService.getPaymentsByInvoiceId(invoiceId);
+        return ApiResponse.<List<PurchaseInvoicePaymentResponse>>builder()
+                .code(0)
+                .message("Lấy danh sách thanh toán thành công")
+                .result(payments)
+                .build();
     }
+
 }
 
 

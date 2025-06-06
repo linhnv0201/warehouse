@@ -16,7 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,9 +47,11 @@ public class SalesOrderService {
         User createdBy = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        // Tạo đối tượng SalesOrder thủ công
+        // Sinh mã đơn hàng tự động
+        String generatedCode = generateSaleOrderCode();
+
         SalesOrder salesOrder = new SalesOrder();
-        salesOrder.setCode(request.getCode());
+        salesOrder.setCode(generatedCode);
         salesOrder.setWarehouse(warehouse);
         salesOrder.setCustomer(customer);
         salesOrder.setCreatedBy(createdBy);
@@ -57,7 +61,6 @@ public class SalesOrderService {
 
         SalesOrder savedOrder = salesOrderRepository.save(salesOrder);
 
-        // Map từng item
         List<SalesOrderItem> items = request.getItems().stream().map(itemReq -> {
             Inventory inventory = inventoryRepository.findById(itemReq.getInventoryId())
                     .orElseThrow(() -> new AppException(ErrorCode.INVENTORY_NOT_FOUND));
@@ -75,6 +78,7 @@ public class SalesOrderService {
 
         return toSalesOrderResponse(savedOrder, items);
     }
+
 
 
 public List<SalesOrderResponse> getAllSalesOrders() {
@@ -117,6 +121,16 @@ public List<SalesOrderResponse> getAllSalesOrders() {
             .toList();
 }
 
+    private String generateSaleOrderCode() {
+        String prefix = "SO-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-";
+
+        long countToday = salesOrderRepository.countByCreatedAtBetween(
+                LocalDate.now().atStartOfDay(),
+                LocalDate.now().plusDays(1).atStartOfDay()
+        );
+
+        return prefix + String.format("%03d", countToday + 1);
+    }
 
     public List<SalesOrderResponse> getApprovedSalesOrders() {
         return salesOrderRepository.findByStatusIgnoreCase("APPROVED").stream()

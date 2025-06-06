@@ -34,12 +34,12 @@ public class PurchaseInvoicePaymentService {
     PurchaseInvoicePaymentRepository paymentRepository;
     UserRepository userRepository;
 
-    public PurchaseInvoicePayment createPayment(PurchaseInvoicePaymentRequest request) {
+    public PurchaseInvoicePaymentResponse createPayment(Integer invoiceId, PurchaseInvoicePaymentRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        PurchaseInvoice invoice = purchaseInvoiceRepository.findById(request.getInvoiceId())
+        PurchaseInvoice invoice = purchaseInvoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new AppException(ErrorCode.PURCHASE_INVOICE_NOT_FOUND));
 
         PurchaseInvoicePayment payment = new PurchaseInvoicePayment();
@@ -51,6 +51,8 @@ public class PurchaseInvoicePaymentService {
         payment.setNote(request.getNote());
         payment.setCreatedBy(user);
 
+        PurchaseInvoicePayment savedPayment = paymentRepository.save(payment);
+
         // Kiểm tra xem hóa đơn đã trả đủ tiền chưa
         boolean paidInFull = checkIfInvoicePaidInFull(invoice.getId());
         if (paidInFull && !"PAID".equals(invoice.getStatus())) {
@@ -59,23 +61,32 @@ public class PurchaseInvoicePaymentService {
             log.info("Purchase invoice {} marked as PAID because payment is full.", invoice.getId());
         }
 
-        return paymentRepository.save(payment);
+        return convertToResponse(savedPayment);
     }
+
+    public PurchaseInvoicePaymentResponse convertToResponse(PurchaseInvoicePayment payment) {
+        return PurchaseInvoicePaymentResponse.builder()
+                .id(payment.getId())
+                .code(payment.getCode())
+                .invoiceCode(payment.getPurchaseInvoice().getCode())
+                .amount(payment.getAmount())
+                .paymentMethod(payment.getPaymentMethod())
+                .note(payment.getNote())
+                .paidAt(payment.getPaidAt())
+                .createdByName(payment.getCreatedBy().getFullname())
+                .build();
+    }
+
+
+
 
     public List<PurchaseInvoicePaymentResponse> getPaymentsByInvoiceId(int invoiceId) {
         List<PurchaseInvoicePayment> list = paymentRepository.findByPurchaseInvoiceId(invoiceId);
-        return list.stream().map(p -> {
-            PurchaseInvoicePaymentResponse res = new PurchaseInvoicePaymentResponse();
-            res.setId(p.getId());
-            res.setCode(p.getCode());
-            res.setAmount(p.getAmount());
-            res.setPaymentMethod(p.getPaymentMethod());
-            res.setNote(p.getNote());
-            res.setPaidAt(p.getPaidAt());
-            res.setCreatedByEmail(p.getCreatedBy().getEmail());
-            return res;
-        }).collect(Collectors.toList());
+        return list.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
     }
+
 
     private String generatePaymentCode() {
         String prefix = "PIP-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-";

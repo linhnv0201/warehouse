@@ -23,7 +23,7 @@ public class PurchaseInvoice {
     @Column(name = "code", nullable = false, unique = true, length = 100)
     String code;
 
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "receipt_order_id", nullable = false)
     ReceiveOrder receiveOrder;
 

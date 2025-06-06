@@ -2,6 +2,7 @@ package com.linh.warehouse.service;
 
 import com.linh.warehouse.dto.request.ReceiveOrderItemRequest;
 import com.linh.warehouse.dto.request.ReceiveOrderRequest;
+import com.linh.warehouse.dto.response.*;
 import com.linh.warehouse.entity.*;
 import com.linh.warehouse.exception.AppException;
 import com.linh.warehouse.exception.ErrorCode;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -33,145 +35,35 @@ public class ReceiveOrderService {
     PurchaseInvoiceRepository purchaseInvoiceRepository;
     InventoryRepository inventoryRepository;
 
-//    @Transactional
-//    public ReceiveOrder createReceiveOrder(ReceiveOrderRequest request) {
-//        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-//        User createdBy = userRepository.findByEmail(email)
-//                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-//
-//        // Lấy đơn mua
-//        PurchaseOrder purchaseOrder = purchaseOrderRepository.findById(request.getPurchaseOrderId())
-//                .orElseThrow(() -> new AppException(ErrorCode.PURCHASE_ORDER_NOT_FOUND));
-//
-//        // Tạo Receive Order
-//        ReceiveOrder receiveOrder = new ReceiveOrder();
-//        receiveOrder.setCode(generateReceiveOrderCode());
-//        receiveOrder.setCreatedAt(LocalDateTime.now());
-//        receiveOrder.setPurchaseOrder(purchaseOrder);
-//        receiveOrder.setCreatedBy(createdBy);
-//        receiveOrder = receiveOrderRepository.save(receiveOrder);
-//
-//        log.info("Created ReceiveOrder with code: {}", receiveOrder.getCode());
-//
-//        BigDecimal totalAmount = BigDecimal.ZERO;
-//
-//        for (ReceiveOrderItemRequest itemReq : request.getItems()) {
-//            PurchaseOrderItem purchaseItem = purchaseOrderItemRepository.findById(itemReq.getPurchaseOrderItemId())
-//                    .orElseThrow(() -> new AppException(ErrorCode.PURCHASE_ORDER_ITEM_NOT_FOUND));
-//
-//            int alreadyReceived = receiveOrderItemRepository.getTotalReceivedQuantity(purchaseItem.getId());
-//            int toReceive = itemReq.getQuantity();
-//            int poQuantity = purchaseItem.getQuantity();
-//
-//            if (alreadyReceived + toReceive > poQuantity) {
-//                throw new AppException(ErrorCode.QUANTITY_EXCEEDS_PURCHASE_ORDER,
-//                        "Tổng số lượng nhập (" + (alreadyReceived + toReceive) +
-//                                ") vượt quá số lượng đặt (" + poQuantity + ") cho sản phẩm " + purchaseItem.getProduct().getName());
-//            }
-//
-//            // Tạo item nhận hàng
-//            ReceiveOrderItem item = new ReceiveOrderItem();
-//            item.setReceiveOrder(receiveOrder);
-//            item.setPurchaseOrderItem(purchaseItem);
-//            item.setQuantity(toReceive);
-//            receiveOrderItemRepository.save(item);
-//
-//            // Cập nhật tồn kho (Inventory)
-//            Inventory inventory = inventoryRepository
-//                    .findByWarehouseIdAndProductCode(purchaseOrder.getWarehouse().getId(), purchaseItem.getProduct().getCode())
-//                    .orElse(null);
-//
-//            if (inventory == null) {
-//                inventory = new Inventory();
-//                inventory.setWarehouse(purchaseOrder.getWarehouse());
-//                inventory.setProductCode(purchaseItem.getProduct().getCode());
-//                inventory.setProductName(purchaseItem.getProduct().getName());
-//                inventory.setDescription(purchaseItem.getProduct().getDescription());
-//                inventory.setQuantity(toReceive);
-//                inventory.setQuantityAvailable(toReceive);
-//                inventory.setQuantityReserved(0);
-//                inventory.setUnit(purchaseItem.getProduct().getUnit());
-//                inventory.setUnitPrice(purchaseItem.getUnitPrice());
-//                inventory.setTaxRate(purchaseItem.getTaxRate());
-//            } else {
-//                // Đã có tồn kho, cập nhật số lượng và đơn giá trung bình
-//                int oldQty = inventory.getQuantity();
-//
-//                BigDecimal oldPrice = inventory.getUnitPrice();
-//                BigDecimal newPrice = purchaseItem.getUnitPrice();
-//
-//                BigDecimal totalCost = oldPrice.multiply(BigDecimal.valueOf(oldQty))
-//                        .add(newPrice.multiply(BigDecimal.valueOf(toReceive)));
-//
-//                int totalQty = oldQty + toReceive;
-//
-//                BigDecimal avgPrice = totalCost.divide(BigDecimal.valueOf(totalQty), 2, RoundingMode.HALF_UP);
-//                inventory.setUnitPrice(avgPrice);
-//
-//                inventory.setQuantity(totalQty);
-//                inventory.setQuantityAvailable(inventory.getQuantityAvailable() + toReceive);
-//            }
-//
-//            inventory.setLastUpdated(LocalDateTime.now());
-//            inventoryRepository.save(inventory);
-//
-//            // Cộng vào tổng tiền hóa đơn
-//            BigDecimal itemTotal = purchaseItem.getUnitPrice()
-//                    .multiply(BigDecimal.valueOf(toReceive));
-//            totalAmount = totalAmount.add(itemTotal);
-//        }
-//
-//        // Tạo hóa đơn
-//        PurchaseInvoice invoice = new PurchaseInvoice();
-//        invoice.setCode(generatePurchaseInvoiceCode());
-//        invoice.setReceiveOrder(receiveOrder);
-//        invoice.setTotalAmount(totalAmount);
-//        invoice.setStatus("UNPAID");
-//        invoice.setCreatedAt(LocalDateTime.now());
-//        purchaseInvoiceRepository.save(invoice);
-//
-//        log.info("Created PurchaseInvoice with code: {}, totalAmount: {}", invoice.getCode(), totalAmount);
-//
-//        // Cập nhật trạng thái đơn mua nếu đã nhận đủ
-//        updateOrderStatusIfCompleted(purchaseOrder.getId());
-//
-//        return receiveOrder;
-//    }
-
     @Transactional
-    public ReceiveOrder createReceiveOrder(Integer purchaseOrderId, ReceiveOrderRequest request) {
+    public ReceiveOrderResponse createReceiveOrder(Integer purchaseOrderId, ReceiveOrderRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User createdBy = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        // Lấy đơn mua theo purchaseOrderId
         PurchaseOrder purchaseOrder = purchaseOrderRepository.findById(purchaseOrderId)
                 .orElseThrow(() -> new AppException(ErrorCode.PURCHASE_ORDER_NOT_FOUND));
 
-        // Tạo Receive Order mới
         ReceiveOrder receiveOrder = new ReceiveOrder();
         receiveOrder.setCode(generateReceiveOrderCode());
         receiveOrder.setCreatedAt(LocalDateTime.now());
         receiveOrder.setPurchaseOrder(purchaseOrder);
         receiveOrder.setCreatedBy(createdBy);
+        receiveOrder.setShippingCost(request.getShippingCost());
         receiveOrder = receiveOrderRepository.save(receiveOrder);
 
         log.info("Created ReceiveOrder with code: {}", receiveOrder.getCode());
 
         BigDecimal totalAmount = BigDecimal.ZERO;
+        List<ReceiveOrderItemResponse> itemResponses = new ArrayList<>();
 
         for (ReceiveOrderItemRequest itemReq : request.getItems()) {
             PurchaseOrderItem purchaseItem = purchaseOrderItemRepository.findById(itemReq.getPurchaseOrderItemId())
                     .orElseThrow(() -> new AppException(ErrorCode.PURCHASE_ORDER_ITEM_NOT_FOUND));
 
-            // Tổng số lượng đã nhận của item này
             int alreadyReceived = receiveOrderItemRepository.getTotalReceivedQuantity(purchaseItem.getId());
-
             int toReceive = itemReq.getQuantity();
-            int poQuantity = purchaseItem.getQuantity();
-
-            int remainingQuantity = poQuantity - alreadyReceived;
-
+            int remainingQuantity = purchaseItem.getQuantity() - alreadyReceived;
 
             if (toReceive > remainingQuantity) {
                 throw new AppException(ErrorCode.QUANTITY_EXCEEDS_PURCHASE_ORDER,
@@ -180,12 +72,17 @@ public class ReceiveOrderService {
                                 ") cho sản phẩm " + purchaseItem.getProduct().getName());
             }
 
-            // Tạo ReceiveOrderItem
             ReceiveOrderItem item = new ReceiveOrderItem();
             item.setReceiveOrder(receiveOrder);
             item.setPurchaseOrderItem(purchaseItem);
             item.setQuantity(toReceive);
-            receiveOrderItemRepository.save(item);
+            item = receiveOrderItemRepository.save(item);
+
+            itemResponses.add(ReceiveOrderItemResponse.builder()
+                    .id(item.getId())
+                    .productName(purchaseItem.getProduct().getName())
+                    .quantity(toReceive)
+                    .build());
 
             // Cập nhật tồn kho
             Inventory inventory = inventoryRepository
@@ -205,20 +102,15 @@ public class ReceiveOrderService {
                 inventory.setUnitPrice(purchaseItem.getUnitPrice());
                 inventory.setTaxRate(purchaseItem.getTaxRate());
             } else {
-                // Cập nhật tồn kho
                 int oldQty = inventory.getQuantity();
-
                 BigDecimal oldPrice = inventory.getUnitPrice();
                 BigDecimal newPrice = purchaseItem.getUnitPrice();
-
                 BigDecimal totalCost = oldPrice.multiply(BigDecimal.valueOf(oldQty))
                         .add(newPrice.multiply(BigDecimal.valueOf(toReceive)));
-
                 int totalQty = oldQty + toReceive;
-
                 BigDecimal avgPrice = totalCost.divide(BigDecimal.valueOf(totalQty), 2, RoundingMode.HALF_UP);
-                inventory.setUnitPrice(avgPrice);
 
+                inventory.setUnitPrice(avgPrice);
                 inventory.setQuantity(totalQty);
                 inventory.setQuantityAvailable(inventory.getQuantityAvailable() + toReceive);
             }
@@ -226,13 +118,27 @@ public class ReceiveOrderService {
             inventory.setLastUpdated(LocalDateTime.now());
             inventoryRepository.save(inventory);
 
-            // Cộng tiền hàng
-            BigDecimal itemTotal = purchaseItem.getUnitPrice()
-                    .multiply(BigDecimal.valueOf(toReceive));
+            // ✅ Tính tổng tiền từng sản phẩm bao gồm thuế %
+            BigDecimal unitPrice = purchaseItem.getUnitPrice();
+            BigDecimal taxRate = purchaseItem.getTaxRate() != null ? purchaseItem.getTaxRate() : BigDecimal.ZERO;
+
+            // Chuyển từ phần trăm (%) sang dạng thập phân
+            BigDecimal taxMultiplier = BigDecimal.ONE.add(taxRate.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP));
+
+            BigDecimal itemTotal = unitPrice
+                    .multiply(BigDecimal.valueOf(toReceive))
+                    .multiply(taxMultiplier);
+
             totalAmount = totalAmount.add(itemTotal);
+
         }
 
-        // Tạo hóa đơn mua hàng
+        // ✅ Cộng thêm shipping cost
+        if (receiveOrder.getShippingCost() != null) {
+            totalAmount = totalAmount.add(receiveOrder.getShippingCost());
+        }
+
+        // Tạo hóa đơn
         PurchaseInvoice invoice = new PurchaseInvoice();
         invoice.setCode(generatePurchaseInvoiceCode());
         invoice.setReceiveOrder(receiveOrder);
@@ -243,18 +149,25 @@ public class ReceiveOrderService {
 
         log.info("Created PurchaseInvoice with code: {}, totalAmount: {}", invoice.getCode(), totalAmount);
 
-        // Cập nhật trạng thái đơn đặt hàng nếu đã nhận đủ
         updateOrderStatusIfCompleted(purchaseOrder.getId());
 
-        return receiveOrder;
+        return ReceiveOrderResponse.builder()
+                .id(receiveOrder.getId())
+                .code(receiveOrder.getCode())
+                .createdAt(receiveOrder.getCreatedAt())
+                .createdBy(createdBy.getFullname())
+                .shippingCost(receiveOrder.getShippingCost())
+                .totalAmount(totalAmount)
+                .items(itemResponses)
+                .build();
     }
+
+
 
 
     public List<ReceiveOrder> getByPurchaseOrderId(Integer purchaseOrderId) {
         return receiveOrderRepository.findByPurchaseOrderId(purchaseOrderId);
     }
-
-
 
     private String generateReceiveOrderCode() {
         return "RO-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -264,12 +177,64 @@ public class ReceiveOrderService {
         return "PI-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
-    public ReceiveOrder getById(int id) {
-        return receiveOrderRepository.findById(id)
+
+    public ReceiveOrderResponse getById(int id) {
+        // Tìm kiếm phiếu nhập kho theo ID
+        ReceiveOrder receiveOrder = receiveOrderRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.RECEIVE_ORDER_NOT_FOUND));
+
+// Lấy thông tin đơn hàng liên quan
+        PurchaseOrder purchaseOrder = receiveOrder.getPurchaseOrder();
+        User createdBy = receiveOrder.getCreatedBy();
+
+// Tạo list các mục hàng trong phiếu nhập kho
+        BigDecimal totalAmount = BigDecimal.ZERO;
+        List<ReceiveOrderItemResponse> itemResponses = new ArrayList<>();
+
+// Duyệt qua tất cả các mục trong phiếu nhập
+        for (ReceiveOrderItem item : receiveOrderItemRepository.findByReceiveOrderId(id)) {
+            PurchaseOrderItem purchaseItem = item.getPurchaseOrderItem();
+            int receivedQuantity = item.getQuantity();
+
+            // Lấy đơn giá và thuế
+            BigDecimal unitPrice = purchaseItem.getUnitPrice() != null ? purchaseItem.getUnitPrice() : BigDecimal.ZERO;
+            BigDecimal taxRate = purchaseItem.getTaxRate() != null ? purchaseItem.getTaxRate() : BigDecimal.ZERO;
+
+            // Tính thành tiền = đơn giá * số lượng * (1 + thuế%)
+            BigDecimal taxMultiplier = BigDecimal.ONE.add(taxRate.divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP));
+            BigDecimal totalPrice = unitPrice.multiply(BigDecimal.valueOf(receivedQuantity)).multiply(taxMultiplier);
+
+            // Cộng dồn tổng tiền
+            totalAmount = totalAmount.add(totalPrice);
+
+            // Tạo response cho từng item trong phiếu nhập
+            itemResponses.add(ReceiveOrderItemResponse.builder()
+                    .id(item.getId())
+                    .productName(purchaseItem.getProduct().getName())
+                    .quantity(receivedQuantity)
+                    .unitPrice(unitPrice)
+                    .taxRate(taxRate)
+                    .totalPrice(totalPrice)
+                    .build());
+        }
+
+// Cộng thêm phí vận chuyển vào tổng số tiền
+        if (receiveOrder.getShippingCost() != null) {
+            totalAmount = totalAmount.add(receiveOrder.getShippingCost());
+        }
+
+// Tạo response cho ReceiveOrder
+        return ReceiveOrderResponse.builder()
+                .id(receiveOrder.getId())
+                .code(receiveOrder.getCode())
+                .createdAt(receiveOrder.getCreatedAt())
+                .createdBy(createdBy.getFullname())
+                .shippingCost(receiveOrder.getShippingCost())
+                .totalAmount(totalAmount)
+                .items(itemResponses)
+                .build();
+
     }
-
-
 
     @Transactional
     public void updateOrderStatusIfCompleted(Integer orderId) {

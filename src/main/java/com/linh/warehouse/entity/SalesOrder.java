@@ -44,9 +44,6 @@ public class SalesOrder {
     @JoinColumn(name = "customer_id", nullable = false)
     Customer customer;
 
-    @Column(name = "shipping_method")
-    String shippingMethod;
-
     @Column(name = "note")
     String note;
 
