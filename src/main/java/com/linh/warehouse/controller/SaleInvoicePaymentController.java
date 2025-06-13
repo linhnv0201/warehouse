@@ -1,5 +1,6 @@
 package com.linh.warehouse.controller;
 
+import com.linh.warehouse.dto.request.ApiResponse;
 import com.linh.warehouse.dto.request.SaleInvoicePaymentRequest;
 import com.linh.warehouse.dto.response.SaleInvoicePaymentResponse;
 import com.linh.warehouse.entity.SaleInvoicePayment;
@@ -17,17 +18,24 @@ import java.util.List;
 @Slf4j
 public class SaleInvoicePaymentController {
 
-    private final SaleInvoicePaymentService paymentService;
+    private final SaleInvoicePaymentService saleInvoicePaymentService;
 
-    @PostMapping
-    public ResponseEntity<SaleInvoicePayment> createPayment(@RequestBody SaleInvoicePaymentRequest request) {
-        SaleInvoicePayment payment = paymentService.createPayment(request);
-        return ResponseEntity.ok(payment);
+    @PostMapping("/{id}")
+    public ApiResponse<SaleInvoicePaymentResponse> createPayment(
+            @PathVariable Integer id,
+            @RequestBody SaleInvoicePaymentRequest request
+    ) {
+        SaleInvoicePaymentResponse response = saleInvoicePaymentService.createPayment(id, request);
+        return ApiResponse.<SaleInvoicePaymentResponse>builder()
+                .message("Tạo thanh toán thành công")
+                .result(response)
+                .build();
     }
+
 
     @GetMapping("/{invoiceId}")
     public ResponseEntity<List<SaleInvoicePaymentResponse>> getPaymentsByInvoiceId(@PathVariable int invoiceId) {
-        List<SaleInvoicePaymentResponse> payments = paymentService.getPaymentsByInvoiceId(invoiceId);
+        List<SaleInvoicePaymentResponse> payments = saleInvoicePaymentService.getPaymentsByInvoiceId(invoiceId);
         return ResponseEntity.ok(payments);
     }
 }

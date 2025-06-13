@@ -34,32 +34,38 @@ public class SalesOrderController {
     }
 
     @PreAuthorize("hasRole('MANAGER')")
-    @PutMapping("/{id}/status")
-    public ApiResponse<SalesOrderResponse> changeSalesOrderStatus(@PathVariable Integer id,
-                                                                  @RequestParam String status) {
+    @PatchMapping("/{id}/status")
+    public ApiResponse<SalesOrderResponse> updateSalesOrderStatus(
+            @PathVariable Integer id,
+            @RequestParam String status) {
+        SalesOrderResponse response = salesOrderService.approveOrDenySalesOrder(id,status);
         return ApiResponse.<SalesOrderResponse>builder()
                 .message("Thay đổi trạng thái")
-                .result(salesOrderService.approveOrDenySalesOrder(id, status))
+                .result(response)
                 .build();
     }
 
     @PreAuthorize("hasAnyRole('MANAGER', 'PURCHASER', 'WAREHOUSE', 'ACCOUNTANT')")
     @GetMapping
-    public ApiResponse<List<SalesOrderResponse>> getAllSalesOrders() {
+    public ApiResponse<List<SalesOrderResponse>> getSalesOrdersByStatus(
+            @RequestParam(defaultValue = "ALL") String status) {
+        List<SalesOrderResponse> responses = salesOrderService.getSalesOrdersByStatus(status);
         return ApiResponse.<List<SalesOrderResponse>>builder()
-                .message("All SO")
-                .result(salesOrderService.getAllSalesOrders())
+                .message("Danh sách đơn bán theo trạng thái: " + status)
+                .result(responses)
                 .build();
     }
 
     @PreAuthorize("hasAnyRole('MANAGER', 'PURCHASER', 'WAREHOUSE', 'ACCOUNTANT')")
-    @GetMapping("/approved")
-    public ApiResponse<List<SalesOrderResponse>> getApprovedSalesOrders() {
-        return ApiResponse.<List<SalesOrderResponse>>builder()
-                .message("All Approved SO")
-                .result(salesOrderService.getApprovedSalesOrders())
+    @GetMapping("/{id}")
+    public ApiResponse<SalesOrderResponse> getSalesOrderById(@PathVariable Integer id) {
+        SalesOrderResponse response = salesOrderService.getSalesOrderById(id);
+        return ApiResponse.<SalesOrderResponse>builder()
+                .message("Lấy chi tiết đơn hàng thành công")
+                .result(response)
                 .build();
     }
+
 
 
 }

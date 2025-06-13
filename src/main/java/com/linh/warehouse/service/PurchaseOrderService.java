@@ -198,9 +198,16 @@ public class PurchaseOrderService {
         return mapToPurchaseOrderResponse(saved, items, totalPrice);
     }
 
-    public List<PurchaseOrderResponse> getApprovedPurchaseOrders() {
-        List<PurchaseOrder> approvedOrders = purchaseOrderRepository.findByStatus("APPROVED");
-        return approvedOrders.stream()
+    public List<PurchaseOrderResponse> getPurchaseOrdersByStatus(String status) {
+        List<PurchaseOrder> orders;
+
+        if ("ALL".equalsIgnoreCase(status)) {
+            orders = purchaseOrderRepository.findAll();
+        } else {
+            orders = purchaseOrderRepository.findByStatus(status);
+        }
+
+        return orders.stream()
                 .map(order -> {
                     List<PurchaseOrderItem> items = purchaseOrderItemRepository.findByPurchaseOrderId(order.getId());
                     BigDecimal totalPrice = calculateTotalAmount(items);
@@ -208,6 +215,9 @@ public class PurchaseOrderService {
                 })
                 .collect(Collectors.toList());
     }
+
+
+
 
     public BigDecimal calculateTotalAmount(List<PurchaseOrderItem> items) {
         BigDecimal total = BigDecimal.ZERO;

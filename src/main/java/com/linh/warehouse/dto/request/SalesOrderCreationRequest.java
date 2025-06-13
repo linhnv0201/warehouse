@@ -17,7 +17,7 @@ import java.util.List;
 public class SalesOrderCreationRequest {
     Integer warehouseId;
     Integer customerId;
-    String note;
+    String saleName;
     List<SalesOrderItemRequest> items;
 }
 

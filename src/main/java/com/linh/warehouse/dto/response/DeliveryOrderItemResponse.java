@@ -1,9 +1,9 @@
 package com.linh.warehouse.dto.response;
-import java.math.BigDecimal;
 
-import com.linh.warehouse.entity.Inventory;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+
+import java.math.BigDecimal;
 
 @Getter
 @Setter
@@ -11,15 +11,14 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class SalesOrderItemResponse {
+public class DeliveryOrderItemResponse {
+
     Integer id;
     Integer productId;
     String productCode;
     String productName;
     String warehouse;
     Integer quantity;
-    Integer remainingQuantity; // Nếu cần theo dõi còn lại (ví dụ chưa xuất kho)
-    BigDecimal saleUnitPrice;
-    BigDecimal taxRate;        // Nếu có chính sách thuế bán hàng
+    BigDecimal unitPrice;
     BigDecimal totalPrice;
 }

@@ -32,10 +32,11 @@ public class PurchaseOrderController {
 
     @PreAuthorize("hasAnyRole('MANAGER', 'PURCHASER', 'WAREHOUSE', 'ACCOUNTANT')")
     @GetMapping
-    public ApiResponse<List<PurchaseOrderResponse>> getAllPurchaseOrders() {
-        List<PurchaseOrderResponse> responses = purchaseOrderService.getAllPurchaseOrders();
+    public ApiResponse<List<PurchaseOrderResponse>> getOrdersByStatus(
+            @RequestParam(defaultValue = "ALL") String status) {
+        List<PurchaseOrderResponse> responses = purchaseOrderService.getPurchaseOrdersByStatus(status);
         return ApiResponse.<List<PurchaseOrderResponse>>builder()
-                .message("Danh sách đơn hàng")
+                .message("Danh sách đơn hàng theo trạng thái: " + status)
                 .result(responses)
                 .build();
     }
@@ -58,16 +59,6 @@ public class PurchaseOrderController {
         return ApiResponse.<PurchaseOrderResponse>builder()
                 .message("Cập nhật trạng thái đơn hàng thành công")
                 .result(response)
-                .build();
-    }
-
-    @PreAuthorize("hasAnyRole('MANAGER', 'PURCHASER', 'WAREHOUSE', 'ACCOUNTANT')")
-    @GetMapping("/approved")
-    public ApiResponse<List<PurchaseOrderResponse>> getApprovedOrders() {
-        List<PurchaseOrderResponse> responses = purchaseOrderService.getApprovedPurchaseOrders();
-        return ApiResponse.<List<PurchaseOrderResponse>>builder()
-                .message("Danh sách đơn hàng đã duyệt")
-                .result(responses)
                 .build();
     }
 }

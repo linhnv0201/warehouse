@@ -39,8 +39,9 @@ public enum ErrorCode {
     SALE_INVOICE_NOT_FOUND(1027, "Sale Invoice not found"),
     PRODUCT_EXISTED(1028, "Product already existed"),
     PRODUCT_NOT_FOUND(1029, "Product not found"),
+    INVALID_PAYMENT_AMOUNT(1030, "Invalid Payment Amount"),
+    PAYMENT_EXCEEDS_TOTAL(1031, "Payment Exceeds Total"),
     ;
      int code;
      String message;
-
 }

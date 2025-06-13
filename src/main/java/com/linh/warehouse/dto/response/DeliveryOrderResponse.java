@@ -12,19 +12,13 @@ import java.util.List;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class SalesOrderResponse {
+public class DeliveryOrderResponse {
+
     Integer id;
     String code;
     String warehouseName;
     String customerName;
-    String saleName;
-    String status;
     String createdBy;
     LocalDateTime createdAt;
-    String approvedBy;
-    LocalDateTime approvedAt;
-
-    List<SalesOrderItemResponse> items;
-
+    List<DeliveryOrderItemResponse> items;
 }
-

@@ -14,12 +14,13 @@ import java.time.LocalDateTime;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SaleInvoicePaymentResponse {
-    private int id;
-    private String code;
-    private BigDecimal amount;
-    private String paymentMethod;
-    private String note;
-    private LocalDateTime paidAt;
-    private String createdByEmail;
+    int id;
+    String code;
+    String invoiceCode;
+    BigDecimal amount;
+    String paymentMethod;
+    String note;
+    LocalDateTime paidAt;
+    String createdBy;
 }
 

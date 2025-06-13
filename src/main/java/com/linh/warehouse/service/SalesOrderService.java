@@ -1,9 +1,8 @@
 package com.linh.warehouse.service;
 
 import com.linh.warehouse.dto.request.SalesOrderCreationRequest;
-import com.linh.warehouse.dto.request.SalesOrderItemRequest;
-import com.linh.warehouse.dto.response.SalesOrderResponse;
 import com.linh.warehouse.dto.response.SalesOrderItemResponse;
+import com.linh.warehouse.dto.response.SalesOrderResponse;
 import com.linh.warehouse.entity.*;
 import com.linh.warehouse.exception.AppException;
 import com.linh.warehouse.exception.ErrorCode;
@@ -16,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -43,19 +43,14 @@ public class SalesOrderService {
         Customer customer = customerRepository.findById(request.getCustomerId())
                 .orElseThrow(() -> new AppException(ErrorCode.CUSTOMER_NOT_FOUND));
 
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User createdBy = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-
-        // Sinh mã đơn hàng tự động
-        String generatedCode = generateSaleOrderCode();
+        User createdBy = getCurrentUser();
 
         SalesOrder salesOrder = new SalesOrder();
-        salesOrder.setCode(generatedCode);
+        salesOrder.setCode(generateSaleOrderCode());
         salesOrder.setWarehouse(warehouse);
         salesOrder.setCustomer(customer);
         salesOrder.setCreatedBy(createdBy);
-        salesOrder.setNote(request.getNote());
+        salesOrder.setSaleName(request.getSaleName());
         salesOrder.setStatus("PENDING");
         salesOrder.setCreatedAt(LocalDateTime.now());
 
@@ -70,76 +65,30 @@ public class SalesOrderService {
             item.setInventory(inventory);
             item.setQuantity(itemReq.getQuantity());
             item.setSaleUnitPrice(itemReq.getSaleUnitPrice());
-
             return item;
         }).collect(Collectors.toList());
 
         salesOrderItemRepository.saveAll(items);
-
         return toSalesOrderResponse(savedOrder, items);
     }
 
+    public List<SalesOrderResponse> getSalesOrdersByStatus(String status) {
+        List<SalesOrder> orders;
 
+        if ("ALL".equalsIgnoreCase(status)) {
+            orders = salesOrderRepository.findAll();
+        } else {
+            orders = salesOrderRepository.findByStatusIgnoreCase(status);
+        }
 
-public List<SalesOrderResponse> getAllSalesOrders() {
-    List<SalesOrder> allOrders = salesOrderRepository.findAll();
-
-    return allOrders.stream()
-            .map(order -> {
-                SalesOrderResponse response = new SalesOrderResponse();
-
-                response.setId(order.getId());
-                response.setCode(order.getCode());
-                response.setWarehouseName(order.getWarehouse().getName());
-                response.setCustomerName(order.getCustomer().getName());
-                response.setNote(order.getNote());
-                response.setStatus(order.getStatus());
-                response.setCreatedAt(order.getCreatedAt());
-                response.setCreatedBy(order.getCreatedBy() != null ? order.getCreatedBy().getFullname() : null);
-                if (order.getApprovedBy() != null) {
-                    response.setApprovedBy(order.getApprovedBy().getFullname());
-                    response.setApprovedAt(order.getApprovedAt());
-                }
-
-                List<SalesOrderItem> items = salesOrderItemRepository.findBySalesOrderId(order.getId());
-
-                List<SalesOrderItemResponse> itemResponses = items.stream()
-                        .map(item -> {
-                            SalesOrderItemResponse itemRes = new SalesOrderItemResponse();
-                            itemRes.setId(item.getId());
-                            itemRes.setWarehouse(item.getInventory().getWarehouse().getName());
-                            itemRes.setQuantity(item.getQuantity());
-                            itemRes.setSaleUnitPrice(item.getSaleUnitPrice());
-                            return itemRes;
-                        })
-                        .toList();
-
-                response.setItems(itemResponses);
-
-                return response;
-            })
-            .toList();
-}
-
-    private String generateSaleOrderCode() {
-        String prefix = "SO-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-";
-
-        long countToday = salesOrderRepository.countByCreatedAtBetween(
-                LocalDate.now().atStartOfDay(),
-                LocalDate.now().plusDays(1).atStartOfDay()
-        );
-
-        return prefix + String.format("%03d", countToday + 1);
-    }
-
-    public List<SalesOrderResponse> getApprovedSalesOrders() {
-        return salesOrderRepository.findByStatusIgnoreCase("APPROVED").stream()
+        return orders.stream()
                 .map(order -> {
                     List<SalesOrderItem> items = salesOrderItemRepository.findBySalesOrderId(order.getId());
                     return toSalesOrderResponse(order, items);
                 })
                 .collect(Collectors.toList());
     }
+
 
     @Transactional
     public SalesOrderResponse approveOrDenySalesOrder(Integer orderId, String newStatus) {
@@ -150,9 +99,7 @@ public List<SalesOrderResponse> getAllSalesOrders() {
             throw new AppException(ErrorCode.INVALID_ORDER_STATUS);
         }
 
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        User currentUser = getCurrentUser();
 
         if ("APPROVED".equalsIgnoreCase(newStatus)) {
             List<SalesOrderItem> items = salesOrderItemRepository.findBySalesOrderId(orderId);
@@ -166,7 +113,7 @@ public List<SalesOrderResponse> getAllSalesOrders() {
 
                 if (available < required) {
                     throw new AppException(ErrorCode.INSUFFICIENT_INVENTORY,
-                            "Sản phẩm ID " + item.getInventory().getId() + " không đủ tồn kho để duyệt đơn.");
+                            "Sản phẩm ID " + inventory.getId() + " không đủ tồn kho để duyệt đơn.");
                 }
 
                 inventory.setQuantityAvailable(available - required);
@@ -181,6 +128,7 @@ public List<SalesOrderResponse> getAllSalesOrders() {
         } else if ("CANCELLED".equalsIgnoreCase(newStatus)) {
             order.setStatus("CANCELLED");
             order.setApprovedBy(null);
+
         } else {
             throw new AppException(ErrorCode.INVALID_ORDER_STATUS);
         }
@@ -190,32 +138,65 @@ public List<SalesOrderResponse> getAllSalesOrders() {
         return toSalesOrderResponse(saved, items);
     }
 
+    public SalesOrderResponse getSalesOrderById(Integer orderId) {
+        SalesOrder order = salesOrderRepository.findById(orderId)
+                .orElseThrow(() -> new AppException(ErrorCode.SALES_ORDER_NOT_FOUND));
+
+        List<SalesOrderItem> items = salesOrderItemRepository.findBySalesOrderId(orderId);
+        return toSalesOrderResponse(order, items);
+    }
+
+    private String generateSaleOrderCode() {
+        String prefix = "SO-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-";
+        long countToday = salesOrderRepository.countByCreatedAtBetween(
+                LocalDate.now().atStartOfDay(),
+                LocalDate.now().plusDays(1).atStartOfDay()
+        );
+        return prefix + String.format("%03d", countToday + 1);
+    }
 
     private SalesOrderResponse toSalesOrderResponse(SalesOrder order, List<SalesOrderItem> items) {
         SalesOrderResponse response = new SalesOrderResponse();
         response.setId(order.getId());
+        response.setCode(order.getCode());
         response.setWarehouseName(order.getWarehouse().getName());
         response.setCustomerName(order.getCustomer().getName());
-        response.setNote(order.getNote());
+        response.setSaleName(order.getSaleName());
         response.setStatus(order.getStatus());
         response.setCreatedAt(order.getCreatedAt());
-        response.setCreatedBy(order.getCreatedBy().getFullname());
+        response.setCreatedBy(order.getCreatedBy() != null ? order.getCreatedBy().getFullname() : null);
 
         if (order.getApprovedBy() != null) {
             response.setApprovedBy(order.getApprovedBy().getFullname());
             response.setApprovedAt(order.getApprovedAt());
         }
 
-        List<SalesOrderItemResponse> itemResponses = items.stream().map(item -> {
-            SalesOrderItemResponse itemRes = new SalesOrderItemResponse();
-            itemRes.setId(item.getId());
-            itemRes.setWarehouse(item.getInventory().getWarehouse().getName());
-            itemRes.setQuantity(item.getQuantity());
-            itemRes.setSaleUnitPrice(item.getSaleUnitPrice());
-            return itemRes;
-        }).collect(Collectors.toList());
+        List<SalesOrderItemResponse> itemResponses = items.stream()
+                .map(item -> {
+                    Inventory inv = item.getInventory();
+//                    Product product = inv.getProductCode();
+
+                    return SalesOrderItemResponse.builder()
+                            .id(item.getId())
+                            .productCode(inv.getProductCode())
+                            .productName(inv.getProductName())
+                            .warehouse(inv.getWarehouse().getName())
+                            .quantity(item.getQuantity())
+                            .remainingQuantity(item.getQuantity()) // nếu chưa xuất kho thì = quantity
+                            .saleUnitPrice(item.getSaleUnitPrice())
+                            .taxRate(inv.getTaxRate() != null ? inv.getTaxRate() : BigDecimal.ZERO)
+                            .totalPrice(item.getSaleUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                            .build();
+                })
+                .collect(Collectors.toList());
 
         response.setItems(itemResponses);
         return response;
+    }
+
+    private User getCurrentUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
     }
 }

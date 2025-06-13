@@ -44,8 +44,8 @@ public class SalesOrder {
     @JoinColumn(name = "customer_id", nullable = false)
     Customer customer;
 
-    @Column(name = "note")
-    String note;
+    @Column(name = "sale_name")
+    String saleName;
 
     @Column(name = "status", nullable = false, length = 50)
     String status;

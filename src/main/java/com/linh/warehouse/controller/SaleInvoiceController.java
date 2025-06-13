@@ -1,5 +1,6 @@
 package com.linh.warehouse.controller;
 
+import com.linh.warehouse.dto.request.ApiResponse;
 import com.linh.warehouse.dto.response.SaleInvoiceResponse;
 import com.linh.warehouse.service.SaleInvoiceService;
 import lombok.RequiredArgsConstructor;
@@ -14,8 +15,10 @@ public class SaleInvoiceController {
     private final SaleInvoiceService saleInvoiceService;
 
     @GetMapping("/by-delivery-order/{deliveryOrderId}")
-    public ResponseEntity<SaleInvoiceResponse> getByDeliveryOrderId(@PathVariable Integer deliveryOrderId) {
-        SaleInvoiceResponse response = saleInvoiceService.getInvoiceByDeliveryOrderId(deliveryOrderId);
-        return ResponseEntity.ok(response);
+    public ApiResponse<SaleInvoiceResponse> getByDeliveryOrderId(@PathVariable Integer deliveryOrderId) {
+        return ApiResponse.<SaleInvoiceResponse>builder()
+                .message("Lấy SI")
+                .result(saleInvoiceService.getInvoiceByDeliveryOrderId(deliveryOrderId))
+                .build();
     }
 }

@@ -18,6 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -33,14 +34,13 @@ public class SaleInvoicePaymentService {
     SaleInvoiceRepository saleInvoiceRepository;
     SaleInvoicePaymentRepository paymentRepository;
     UserRepository userRepository;
-
     @Transactional
-    public SaleInvoicePayment createPayment(SaleInvoicePaymentRequest request) {
+    public SaleInvoicePaymentResponse createPayment(Integer invoiceId, SaleInvoicePaymentRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        SaleInvoice invoice = saleInvoiceRepository.findById(request.getInvoiceId())
+        SaleInvoice invoice = saleInvoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new AppException(ErrorCode.SALE_INVOICE_NOT_FOUND));
 
         SaleInvoicePayment payment = new SaleInvoicePayment();
@@ -52,48 +52,54 @@ public class SaleInvoicePaymentService {
         payment.setNote(request.getNote());
         payment.setCreatedBy(user);
 
-        payment = paymentRepository.save(payment);
+        SaleInvoicePayment savedPayment = paymentRepository.save(payment);
 
-        // Kiểm tra xem hóa đơn đã thanh toán đủ chưa, nếu đủ thì cập nhật trạng thái
-        if (checkIfInvoicePaidInFull(invoice.getId()) && !"PAID".equals(invoice.getStatus())) {
+        // Kiểm tra xem hóa đơn đã thanh toán đủ chưa
+        boolean paidInFull = checkIfInvoicePaidInFull(invoice.getId());
+        if (paidInFull && !"PAID".equals(invoice.getStatus())) {
             invoice.setStatus("PAID");
             saleInvoiceRepository.save(invoice);
             log.info("Sale invoice {} marked as PAID because payment is full.", invoice.getId());
         }
 
-        return payment;
+        return convertToResponse(savedPayment);
     }
 
+
     public List<SaleInvoicePaymentResponse> getPaymentsByInvoiceId(int invoiceId) {
-        List<SaleInvoicePayment> list = paymentRepository.findBySaleInvoiceId(invoiceId);
-        return list.stream().map(p -> {
-            SaleInvoicePaymentResponse res = new SaleInvoicePaymentResponse();
-            res.setId(p.getId());
-            res.setCode(p.getCode());
-            res.setAmount(p.getAmount());
-            res.setPaymentMethod(p.getPaymentMethod());
-            res.setNote(p.getNote());
-            res.setPaidAt(p.getPaidAt());
-            res.setCreatedByEmail(p.getCreatedBy().getEmail());
-            return res;
-        }).collect(Collectors.toList());
+        return paymentRepository.findBySaleInvoiceId(invoiceId).stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
     }
 
     public boolean checkIfInvoicePaidInFull(int invoiceId) {
         SaleInvoice invoice = saleInvoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new AppException(ErrorCode.SALE_INVOICE_NOT_FOUND));
 
-        Double totalPaid = paymentRepository.getTotalPaidAmountByInvoiceId(invoiceId);
+        BigDecimal totalPaid = paymentRepository.getTotalPaidAmountByInvoiceId(invoiceId);
         if (totalPaid == null) {
-            totalPaid = 0.0;
+            totalPaid = BigDecimal.ZERO;
         }
 
-        return totalPaid >= invoice.getTotalAmount().doubleValue();
+        return totalPaid.compareTo(invoice.getTotalAmount()) >= 0;
     }
 
     private String generatePaymentCode() {
         String prefix = "SIP-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-";
-        long count = paymentRepository.count();
-        return prefix + String.format("%03d", count + 1);
+        String uniquePart = String.valueOf(System.currentTimeMillis()).substring(7); // hoặc dùng UUID ngắn
+        return prefix + uniquePart;
+    }
+
+    public SaleInvoicePaymentResponse convertToResponse(SaleInvoicePayment payment) {
+        return SaleInvoicePaymentResponse.builder()
+                .id(payment.getId())
+                .code(payment.getCode())
+                .invoiceCode(payment.getSaleInvoice().getCode())
+                .amount(payment.getAmount())
+                .paymentMethod(payment.getPaymentMethod())
+                .note(payment.getNote())
+                .paidAt(payment.getPaidAt())
+                .createdBy(payment.getCreatedBy().getFullname())
+                .build();
     }
 }
