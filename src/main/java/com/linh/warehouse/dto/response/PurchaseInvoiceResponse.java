@@ -17,6 +17,7 @@ public class PurchaseInvoiceResponse {
     String code;
     BigDecimal totalPaid;
     BigDecimal totalAmount;
+    BigDecimal remainingAmount;
     String status;
     LocalDateTime createdAt;
     String receiveOrderCode;

@@ -42,6 +42,19 @@ public class PurchaseInvoicePaymentService {
         PurchaseInvoice invoice = purchaseInvoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new AppException(ErrorCode.PURCHASE_INVOICE_NOT_FOUND));
 
+        // Lấy tổng số tiền đã thanh toán
+        List<PurchaseInvoicePayment> payments = paymentRepository.findByPurchaseInvoiceId(invoiceId);
+        BigDecimal totalPaid = payments.stream()
+                .map(PurchaseInvoicePayment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal remainingAmount = invoice.getTotalAmount().subtract(totalPaid);
+
+        // Kiểm tra nếu số tiền thanh toán lớn hơn số còn lại
+        if (request.getAmount().compareTo(remainingAmount) > 0) {
+            throw new AppException(ErrorCode.INVALID_REQUEST);
+        }
+
         PurchaseInvoicePayment payment = new PurchaseInvoicePayment();
         payment.setCode(generatePaymentCode());
         payment.setPurchaseInvoice(invoice);
@@ -53,15 +66,43 @@ public class PurchaseInvoicePaymentService {
 
         PurchaseInvoicePayment savedPayment = paymentRepository.save(payment);
 
-        // Kiểm tra xem hóa đơn đã trả đủ tiền chưa
-        boolean paidInFull = checkIfInvoicePaidInFull(invoice.getId());
-        if (paidInFull && !"PAID".equals(invoice.getStatus())) {
-            invoice.setStatus("PAID");
+        // Cập nhật trạng thái hóa đơn
+        String newStatus = computeInvoicePaymentStatus(invoiceId);
+        if (!newStatus.equals(invoice.getStatus())) {
+            invoice.setStatus(newStatus);
             purchaseInvoiceRepository.save(invoice);
-            log.info("Purchase invoice {} marked as PAID because payment is full.", invoice.getId());
+            log.info("Đã cập nhật status cho hóa đơn {} thành {}", invoice.getId(), newStatus);
         }
 
         return convertToResponse(savedPayment);
+    }
+
+
+    public List<PurchaseInvoicePaymentResponse> getPaymentsByInvoiceId(int invoiceId) {
+        List<PurchaseInvoicePayment> list = paymentRepository.findByPurchaseInvoiceId(invoiceId);
+        return list.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
+    }
+
+    public String computeInvoicePaymentStatus(Integer invoiceId) {
+        PurchaseInvoice invoice = purchaseInvoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new AppException(ErrorCode.PURCHASE_INVOICE_NOT_FOUND));
+
+        BigDecimal totalPaid = paymentRepository.getTotalPaidAmountByInvoiceId(invoiceId);
+        if (totalPaid == null) {
+            totalPaid = BigDecimal.ZERO;
+        }
+
+        BigDecimal totalAmount = invoice.getTotalAmount();
+        if (totalPaid.compareTo(BigDecimal.ZERO) == 0) {
+            return "UNPAID";
+        } else if (totalPaid.compareTo(totalAmount) >= 0) {
+            return "PAID";
+        } else {
+            return "PARTIALLY_PAID";
+        }
+
     }
 
     public PurchaseInvoicePaymentResponse convertToResponse(PurchaseInvoicePayment payment) {
@@ -77,35 +118,12 @@ public class PurchaseInvoicePaymentService {
                 .build();
     }
 
-
-
-
-    public List<PurchaseInvoicePaymentResponse> getPaymentsByInvoiceId(int invoiceId) {
-        List<PurchaseInvoicePayment> list = paymentRepository.findByPurchaseInvoiceId(invoiceId);
-        return list.stream()
-                .map(this::convertToResponse)
-                .collect(Collectors.toList());
-    }
-
-
     private String generatePaymentCode() {
         String prefix = "PIP-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-";
         long count = paymentRepository.count();
         return prefix + String.format("%03d", count + 1);
     }
-    public boolean checkIfInvoicePaidInFull(Integer invoiceId) {
-        PurchaseInvoice invoice = purchaseInvoiceRepository.findById(invoiceId)
-                .orElseThrow(() -> new AppException(ErrorCode.PURCHASE_INVOICE_NOT_FOUND));
 
-        // Tổng số tiền đã thanh toán trên hóa đơn này
-        BigDecimal totalPaid = paymentRepository.getTotalPaidAmountByInvoiceId(invoiceId);
-        if (totalPaid == null) {
-            totalPaid = BigDecimal.ZERO;
-        }
-
-        // So sánh tổng đã trả với tổng tiền hóa đơn
-        return totalPaid.compareTo(invoice.getTotalAmount()) >= 0;
-    }
 
 }
 
