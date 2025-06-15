@@ -35,18 +35,16 @@ public class DeliveryOrderService {
     InventoryRepository inventoryRepository;
     SaleInvoiceRepository saleInvoiceRepository;
 
+
     @Transactional
     public DeliveryOrderResponse createDeliveryOrder(Integer salesOrderId, DeliveryOrderRequest request) {
-        // Lấy user tạo
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User createdBy = userRepository.findByEmail(email)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-        // Lấy SalesOrder từ ID truyền qua URL
         SalesOrder salesOrder = salesOrderRepository.findById(salesOrderId)
                 .orElseThrow(() -> new AppException(ErrorCode.SALES_ORDER_NOT_FOUND));
 
-        // Tạo phiếu xuất kho
         DeliveryOrder deliveryOrder = new DeliveryOrder();
         deliveryOrder.setCode(generateDeliveryOrderCode());
         deliveryOrder.setCreatedAt(LocalDateTime.now());
@@ -58,43 +56,42 @@ public class DeliveryOrderService {
         BigDecimal totalAmount = BigDecimal.ZERO;
 
         for (DeliveryOrderItemRequest itemReq : request.getItems()) {
-            SalesOrderItem salesOrderItem = salesOrderItemRepository.findById(itemReq.getSaleOrderItemId())
+            SalesOrderItem salesItem = salesOrderItemRepository.findById(itemReq.getSaleOrderItemId())
                     .orElseThrow(() -> new AppException(ErrorCode.SALES_ORDER_ITEM_NOT_FOUND));
 
-            int totalDelivered = deliveryOrderItemRepository.getTotalDeliveredQuantity(salesOrderItem.getId());
+            int delivered = deliveryOrderItemRepository.getTotalDeliveredQuantity(salesItem.getId());
             int toDeliver = itemReq.getQuantity();
-            int orderQty = salesOrderItem.getQuantity();
-
-            if (totalDelivered + toDeliver > orderQty) {
+            int orderQty = salesItem.getQuantity();
+            if (delivered + toDeliver > orderQty) {
                 throw new AppException(ErrorCode.QUANTITY_EXCEEDS_SALES_ORDER,
-                        "Tổng số lượng giao (" + (totalDelivered + toDeliver) +
-                                ") vượt quá số lượng đặt hàng (" + orderQty +
-                                ") cho sản phẩm: " + salesOrderItem.getInventory().getProductCode());
+                        String.format("Tổng số lượng giao (%d) vượt quá số lượng đặt (%d) cho sản phẩm %s",
+                                delivered + toDeliver, orderQty, salesItem.getInventory().getProductCode()));
             }
 
-            DeliveryOrderItem item = new DeliveryOrderItem();
-            item.setDeliveryOrder(deliveryOrder);
-            item.setSalesOrderItem(salesOrderItem);
-            item.setQuantity(toDeliver);
-            deliveryOrderItemRepository.save(item);
-
-            Inventory inventory = salesOrderItem.getInventory();
-            if (inventory.getQuantityAvailable() < toDeliver) {
+            Inventory inv = salesItem.getInventory();
+            if (inv.getQuantityAvailable() < toDeliver) {
                 throw new AppException(ErrorCode.INSUFFICIENT_INVENTORY,
-                        "Không đủ hàng trong kho để giao sản phẩm: " + inventory.getProductCode());
+                        "Không đủ hàng trong kho để giao sản phẩm: " + inv.getProductCode());
             }
 
-            inventory.setQuantity(inventory.getQuantity() - toDeliver);
-            inventory.setQuantityAvailable(inventory.getQuantityAvailable() - toDeliver);
-            inventory.setLastUpdated(LocalDateTime.now());
-            inventoryRepository.save(inventory);
+            DeliveryOrderItem dItem = new DeliveryOrderItem();
+            dItem.setDeliveryOrder(deliveryOrder);
+            dItem.setSalesOrderItem(salesItem);
+            dItem.setQuantity(toDeliver);
+            deliveryOrderItemRepository.save(dItem);
 
-            BigDecimal itemTotal = salesOrderItem.getSaleUnitPrice()
-                    .multiply(BigDecimal.valueOf(toDeliver));
+            inv.setQuantity(inv.getQuantity() - toDeliver);
+            inv.setQuantityAvailable(inv.getQuantityAvailable() - toDeliver);
+            inv.setLastUpdated(LocalDateTime.now());
+            inventoryRepository.save(inv);
+
+            BigDecimal price = salesItem.getSaleUnitPrice();
+            BigDecimal taxRate = inv.getTaxRate() != null ? inv.getTaxRate() : BigDecimal.ZERO;
+            BigDecimal taxMultiplier = BigDecimal.ONE.add(taxRate.divide(BigDecimal.valueOf(100)));
+            BigDecimal itemTotal = price.multiply(BigDecimal.valueOf(toDeliver)).multiply(taxMultiplier);
             totalAmount = totalAmount.add(itemTotal);
         }
 
-        // Tạo hóa đơn bán
         SaleInvoice invoice = new SaleInvoice();
         invoice.setCode(generateSaleInvoiceCode());
         invoice.setDeliveryOrder(deliveryOrder);
@@ -104,61 +101,86 @@ public class DeliveryOrderService {
         invoice.setCreatedAt(LocalDateTime.now());
         saleInvoiceRepository.save(invoice);
 
-        // Kiểm tra hoàn tất đơn hàng
-        updateOrderStatusIfCompleted(deliveryOrder.getId());
+        updateOrderStatusIfCompleted(deliveryOrder.getSalesOrder().getId());
 
-        // Trả kết quả
         return toDeliveryOrderResponse(deliveryOrder);
     }
 
 
+    private DeliveryOrderResponse toDeliveryOrderResponse(DeliveryOrder do_) {
+        List<DeliveryOrderItemResponse> items = deliveryOrderItemRepository
+                .findByDeliveryOrderId(do_.getId())
+                .stream()
+                .map(it -> {
+                    SalesOrderItem si = it.getSalesOrderItem();
+                    Inventory inv = si.getInventory();
+                    BigDecimal unitPrice = si.getSaleUnitPrice();
+                    BigDecimal taxRate = inv.getTaxRate() != null ? inv.getTaxRate() : BigDecimal.ZERO;
+                    BigDecimal taxMultiplier = BigDecimal.ONE.add(taxRate.divide(BigDecimal.valueOf(100)));
+                    BigDecimal total = unitPrice.multiply(BigDecimal.valueOf(it.getQuantity())).multiply(taxMultiplier);
+
+                    return DeliveryOrderItemResponse.builder()
+                            .id(it.getId())
+                            .productCode(inv.getProductCode())
+                            .productName(inv.getProductName())
+                            .warehouse(inv.getWarehouse().getName())
+                            .quantity(it.getQuantity())
+                            .unitPrice(unitPrice)
+                            .taxRate(taxRate)
+                            .totalPrice(total)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        BigDecimal totalAmount = items.stream()
+                .map(DeliveryOrderItemResponse::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return DeliveryOrderResponse.builder()
+                .id(do_.getId())
+                .code(do_.getCode())
+                .warehouseName(do_.getSalesOrder().getWarehouse().getName())
+                .customerName(do_.getSalesOrder().getCustomer().getName())
+                .createdBy(do_.getCreatedBy().getFullname())
+                .createdAt(do_.getCreatedAt())
+                .items(items)
+                .totalAmount(totalAmount)
+                .build();
+    }
+
     public DeliveryOrderResponse getById(int id) {
-        DeliveryOrder deliveryOrder = deliveryOrderRepository.findById(id)
+        DeliveryOrder do_ = deliveryOrderRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.DELIVERY_ORDER_NOT_FOUND));
-        return toDeliveryOrderResponse(deliveryOrder);
+        return toDeliveryOrderResponse(do_);
     }
 
     public List<DeliveryOrderResponse> getBySalesOrderId(Integer salesOrderId) {
-        SalesOrder salesOrder = salesOrderRepository.findById(salesOrderId)
+        salesOrderRepository.findById(salesOrderId)
                 .orElseThrow(() -> new AppException(ErrorCode.SALES_ORDER_NOT_FOUND));
-
-        List<DeliveryOrder> orders = deliveryOrderRepository.findBySalesOrderId(salesOrderId);
-        return orders.stream()
+        return deliveryOrderRepository
+                .findBySalesOrderId(salesOrderId)
+                .stream()
                 .map(this::toDeliveryOrderResponse)
                 .collect(Collectors.toList());
     }
 
-    private DeliveryOrderResponse toDeliveryOrderResponse(DeliveryOrder deliveryOrder) {
-        List<DeliveryOrderItemResponse> items = deliveryOrderItemRepository
-                .findById(deliveryOrder.getId()).stream()
-                .map(item -> {
-                    Inventory inv = item.getSalesOrderItem().getInventory();
-//                    Product product = inv.getProduct();
-
-                    return DeliveryOrderItemResponse.builder()
-                            .id(item.getId())
-//                            .productId(product.getId())
-//                            .productCode(product.getCode())
-//                            .productName(product.getName())
-                            .productCode(inv.getProductCode())
-                            .productName(inv.getProductName())
-                            .warehouse(inv.getWarehouse().getName())
-                            .quantity(item.getQuantity())
-                            .unitPrice(item.getSalesOrderItem().getSaleUnitPrice())
-                            .totalPrice(item.getSalesOrderItem().getSaleUnitPrice()
-                                    .multiply(BigDecimal.valueOf(item.getQuantity())))
-                            .build();
-                }).collect(Collectors.toList());
-
-        return DeliveryOrderResponse.builder()
-                .id(deliveryOrder.getId())
-                .code(deliveryOrder.getCode())
-                .warehouseName(deliveryOrder.getSalesOrder().getWarehouse().getName())
-                .customerName(deliveryOrder.getSalesOrder().getCustomer().getName())
-                .createdBy(deliveryOrder.getCreatedBy().getFullname())
-                .createdAt(deliveryOrder.getCreatedAt())
-                .items(items)
-                .build();
+    @Transactional
+    public void updateOrderStatusIfCompleted(Integer salesOrderId) {
+        boolean allDone = salesOrderItemRepository.findBySalesOrderId(salesOrderId)
+                .stream()
+                .allMatch(si -> {
+                    int delivered = deliveryOrderItemRepository.getTotalDeliveredQuantity(si.getId());
+                    return delivered >= si.getQuantity();
+                });
+        if (allDone) {
+            SalesOrder so = salesOrderRepository.findById(salesOrderId)
+                    .orElseThrow(() -> new AppException(ErrorCode.SALES_ORDER_NOT_FOUND));
+            if (!"COMPLETED".equals(so.getStatus())) {
+                so.setStatus("COMPLETED");
+                salesOrderRepository.save(so);
+                log.info("Sales order {} marked as COMPLETED", salesOrderId);
+            }
+        }
     }
 
     private String generateDeliveryOrderCode() {
@@ -167,24 +189,5 @@ public class DeliveryOrderService {
 
     private String generateSaleInvoiceCode() {
         return "SI-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    }
-
-    @Transactional
-    public void updateOrderStatusIfCompleted(Integer deliveryOrderId) {
-        DeliveryOrder deliveryOrder = deliveryOrderRepository.findById(deliveryOrderId)
-                .orElseThrow(() -> new AppException(ErrorCode.DELIVERY_ORDER_NOT_FOUND));
-
-        List<SalesOrderItem> items = salesOrderItemRepository.findBySalesOrderId(deliveryOrder.getSalesOrder().getId());
-
-        boolean allDelivered = items.stream().allMatch(item -> {
-            Integer delivered = deliveryOrderItemRepository.getTotalDeliveredQuantity(item.getId());
-            return (item.getQuantity() - delivered) <= 0;
-        });
-
-        if (allDelivered && !"COMPLETED".equals(deliveryOrder.getStatus())) {
-            deliveryOrder.setStatus("COMPLETED");
-            deliveryOrderRepository.save(deliveryOrder);
-            log.info("Delivery order {} marked as COMPLETED because all items are fully delivered.", deliveryOrderId);
-        }
     }
 }

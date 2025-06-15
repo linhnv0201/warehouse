@@ -20,5 +20,6 @@ public class DeliveryOrderItemResponse {
     String warehouse;
     Integer quantity;
     BigDecimal unitPrice;
+    BigDecimal taxRate;
     BigDecimal totalPrice;
 }

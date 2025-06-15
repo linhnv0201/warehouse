@@ -16,6 +16,7 @@ public class SaleInvoiceResponse {
     Integer id;
     String code;
     BigDecimal totalAmount;
+    BigDecimal remainingAmount;
     String status;
     LocalDateTime createdAt;
     String deliveryOrderCode;

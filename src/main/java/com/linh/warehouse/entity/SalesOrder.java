@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -46,6 +47,9 @@ public class SalesOrder {
 
     @Column(name = "sale_name")
     String saleName;
+
+    @Column(name = "total_price")
+    BigDecimal totalPrice;
 
     @Column(name = "status", nullable = false, length = 50)
     String status;

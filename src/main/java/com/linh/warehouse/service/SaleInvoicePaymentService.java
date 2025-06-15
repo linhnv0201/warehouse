@@ -34,6 +34,7 @@ public class SaleInvoicePaymentService {
     SaleInvoiceRepository saleInvoiceRepository;
     SaleInvoicePaymentRepository paymentRepository;
     UserRepository userRepository;
+
     @Transactional
     public SaleInvoicePaymentResponse createPayment(Integer invoiceId, SaleInvoicePaymentRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -54,17 +55,16 @@ public class SaleInvoicePaymentService {
 
         SaleInvoicePayment savedPayment = paymentRepository.save(payment);
 
-        // Kiểm tra xem hóa đơn đã thanh toán đủ chưa
-        boolean paidInFull = checkIfInvoicePaidInFull(invoice.getId());
-        if (paidInFull && !"PAID".equals(invoice.getStatus())) {
-            invoice.setStatus("PAID");
+        // Cập nhật trạng thái hóa đơn
+        String newStatus = computeInvoicePaymentStatus(invoice.getId());
+        if (!newStatus.equals(invoice.getStatus())) {
+            invoice.setStatus(newStatus);
             saleInvoiceRepository.save(invoice);
-            log.info("Sale invoice {} marked as PAID because payment is full.", invoice.getId());
+            log.info("Sale invoice {} status updated to {}", invoice.getId(), newStatus);
         }
 
         return convertToResponse(savedPayment);
     }
-
 
     public List<SaleInvoicePaymentResponse> getPaymentsByInvoiceId(int invoiceId) {
         return paymentRepository.findBySaleInvoiceId(invoiceId).stream()
@@ -72,7 +72,7 @@ public class SaleInvoicePaymentService {
                 .collect(Collectors.toList());
     }
 
-    public boolean checkIfInvoicePaidInFull(int invoiceId) {
+    public String computeInvoicePaymentStatus(Integer invoiceId) {
         SaleInvoice invoice = saleInvoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new AppException(ErrorCode.SALE_INVOICE_NOT_FOUND));
 
@@ -81,12 +81,19 @@ public class SaleInvoicePaymentService {
             totalPaid = BigDecimal.ZERO;
         }
 
-        return totalPaid.compareTo(invoice.getTotalAmount()) >= 0;
+        BigDecimal totalAmount = invoice.getTotalAmount();
+        if (totalPaid.compareTo(BigDecimal.ZERO) == 0) {
+            return "UNPAID";
+        } else if (totalPaid.compareTo(totalAmount) >= 0) {
+            return "PAID";
+        } else {
+            return "PARTIALLY_PAID";
+        }
     }
 
     private String generatePaymentCode() {
         String prefix = "SIP-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + "-";
-        String uniquePart = String.valueOf(System.currentTimeMillis()).substring(7); // hoặc dùng UUID ngắn
+        String uniquePart = String.valueOf(System.currentTimeMillis()).substring(7);
         return prefix + uniquePart;
     }
 

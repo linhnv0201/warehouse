@@ -34,6 +34,7 @@ public class SalesOrderService {
     UserRepository userRepository;
     InventoryRepository inventoryRepository;
     SalesOrderItemRepository salesOrderItemRepository;
+    DeliveryOrderItemRepository deliveryOrderItemRepository;
 
     @Transactional
     public SalesOrderResponse createSalesOrder(SalesOrderCreationRequest request) {
@@ -69,8 +70,77 @@ public class SalesOrderService {
         }).collect(Collectors.toList());
 
         salesOrderItemRepository.saveAll(items);
+
+        // Tính tổng tiền có VAT
+        BigDecimal totalPrice = items.stream()
+                .map(i -> {
+                    Inventory inv = i.getInventory();
+                    BigDecimal unitPrice = i.getSaleUnitPrice();
+                    BigDecimal quantity = BigDecimal.valueOf(i.getQuantity());
+                    BigDecimal taxRate = inv.getTaxRate() != null ? inv.getTaxRate() : BigDecimal.ZERO;
+
+                    return unitPrice.multiply(quantity)
+                            .multiply(BigDecimal.ONE.add(taxRate.divide(BigDecimal.valueOf(100))));
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        savedOrder.setTotalPrice(totalPrice);
+        salesOrderRepository.save(savedOrder);
+
         return toSalesOrderResponse(savedOrder, items);
     }
+
+    private SalesOrderResponse toSalesOrderResponse(SalesOrder order, List<SalesOrderItem> items) {
+        SalesOrderResponse response = new SalesOrderResponse();
+        response.setId(order.getId());
+        response.setCode(order.getCode());
+        response.setWarehouseName(order.getWarehouse().getName());
+        response.setCustomerName(order.getCustomer().getName());
+        response.setSaleName(order.getSaleName());
+        response.setStatus(order.getStatus());
+        response.setCreatedAt(order.getCreatedAt());
+        response.setCreatedBy(order.getCreatedBy() != null ? order.getCreatedBy().getFullname() : null);
+
+        if (order.getApprovedBy() != null) {
+            response.setApprovedBy(order.getApprovedBy().getFullname());
+            response.setApprovedAt(order.getApprovedAt());
+        }
+
+        response.setTotalPrice(order.getTotalPrice());
+
+        List<SalesOrderItemResponse> itemResponses = items.stream()
+                .map(item -> {
+                    Inventory inv = item.getInventory();
+
+                    // 🔍 Lấy số lượng đã xuất
+                    int deliveredQty = deliveryOrderItemRepository.getTotalDeliveredQuantity(item.getId());
+                    int remaining = item.getQuantity() - deliveredQty;
+
+                    // Tính thành tiền có VAT
+                    BigDecimal unitPrice = item.getSaleUnitPrice();
+                    BigDecimal taxRate = inv.getTaxRate() != null ? inv.getTaxRate() : BigDecimal.ZERO;
+                    BigDecimal totalPrice = unitPrice
+                            .multiply(BigDecimal.valueOf(item.getQuantity()))
+                            .multiply(BigDecimal.ONE.add(taxRate.divide(BigDecimal.valueOf(100))));
+
+                    return SalesOrderItemResponse.builder()
+                            .id(item.getId())
+                            .productCode(inv.getProductCode())
+                            .productName(inv.getProductName())
+                            .warehouse(inv.getWarehouse().getName())
+                            .quantity(item.getQuantity())
+                            .remainingQuantity(remaining)
+                            .saleUnitPrice(unitPrice)
+                            .taxRate(taxRate)
+                            .totalPrice(totalPrice)
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        response.setItems(itemResponses);
+        return response;
+    }
+
 
     public List<SalesOrderResponse> getSalesOrdersByStatus(String status) {
         List<SalesOrder> orders;
@@ -88,7 +158,6 @@ public class SalesOrderService {
                 })
                 .collect(Collectors.toList());
     }
-
 
     @Transactional
     public SalesOrderResponse approveOrDenySalesOrder(Integer orderId, String newStatus) {
@@ -153,45 +222,6 @@ public class SalesOrderService {
                 LocalDate.now().plusDays(1).atStartOfDay()
         );
         return prefix + String.format("%03d", countToday + 1);
-    }
-
-    private SalesOrderResponse toSalesOrderResponse(SalesOrder order, List<SalesOrderItem> items) {
-        SalesOrderResponse response = new SalesOrderResponse();
-        response.setId(order.getId());
-        response.setCode(order.getCode());
-        response.setWarehouseName(order.getWarehouse().getName());
-        response.setCustomerName(order.getCustomer().getName());
-        response.setSaleName(order.getSaleName());
-        response.setStatus(order.getStatus());
-        response.setCreatedAt(order.getCreatedAt());
-        response.setCreatedBy(order.getCreatedBy() != null ? order.getCreatedBy().getFullname() : null);
-
-        if (order.getApprovedBy() != null) {
-            response.setApprovedBy(order.getApprovedBy().getFullname());
-            response.setApprovedAt(order.getApprovedAt());
-        }
-
-        List<SalesOrderItemResponse> itemResponses = items.stream()
-                .map(item -> {
-                    Inventory inv = item.getInventory();
-//                    Product product = inv.getProductCode();
-
-                    return SalesOrderItemResponse.builder()
-                            .id(item.getId())
-                            .productCode(inv.getProductCode())
-                            .productName(inv.getProductName())
-                            .warehouse(inv.getWarehouse().getName())
-                            .quantity(item.getQuantity())
-                            .remainingQuantity(item.getQuantity()) // nếu chưa xuất kho thì = quantity
-                            .saleUnitPrice(item.getSaleUnitPrice())
-                            .taxRate(inv.getTaxRate() != null ? inv.getTaxRate() : BigDecimal.ZERO)
-                            .totalPrice(item.getSaleUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
-                            .build();
-                })
-                .collect(Collectors.toList());
-
-        response.setItems(itemResponses);
-        return response;
     }
 
     private User getCurrentUser() {

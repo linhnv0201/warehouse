@@ -140,18 +140,6 @@ public class PurchaseOrderService {
     }
 
     @Transactional
-    public List<PurchaseOrderResponse> getAllPurchaseOrders() {
-        List<PurchaseOrder> orders = purchaseOrderRepository.findAll();
-        return orders.stream()
-                .map(order -> {
-                    List<PurchaseOrderItem> items = purchaseOrderItemRepository.findByPurchaseOrderId(order.getId());
-                    BigDecimal totalPrice = calculateTotalAmount(items);
-                    return mapToPurchaseOrderResponse(order, items, totalPrice);
-                })
-                .collect(Collectors.toList());
-    }
-
-    @Transactional
     public PurchaseOrderResponse getPurchaseOrderById(Integer orderId) {
         PurchaseOrder order = purchaseOrderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(ErrorCode.PURCHASE_ORDER_NOT_FOUND));
@@ -215,9 +203,6 @@ public class PurchaseOrderService {
                 })
                 .collect(Collectors.toList());
     }
-
-
-
 
     public BigDecimal calculateTotalAmount(List<PurchaseOrderItem> items) {
         BigDecimal total = BigDecimal.ZERO;

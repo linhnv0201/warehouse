@@ -18,8 +18,8 @@ public class SalesOrderItemResponse {
     String productName;
     String warehouse;
     Integer quantity;
-    Integer remainingQuantity; // Nếu cần theo dõi còn lại (ví dụ chưa xuất kho)
+    Integer remainingQuantity;
     BigDecimal saleUnitPrice;
-    BigDecimal taxRate;        // Nếu có chính sách thuế bán hàng
+    BigDecimal taxRate;
     BigDecimal totalPrice;
 }
