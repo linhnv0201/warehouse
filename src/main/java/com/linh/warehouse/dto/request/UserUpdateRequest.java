@@ -1,5 +1,6 @@
 package com.linh.warehouse.dto.request;
 
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -14,7 +15,8 @@ import java.util.Set;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserUpdateRequest {
 
-    @Size(min = 4, message = "pass >=4 character")
+    @Size(min = 4, message = "Password phải có ít nhất 4 ký tự")
+    @Nullable
     String password;
     String fullname;
     String phone;

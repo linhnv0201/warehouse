@@ -49,6 +49,11 @@ public class UserService {
 
         userMapper.updateUser(user, request);
 
+        if (request.getPassword() != null && !request.getPassword().trim().isEmpty()) {
+            PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
         return userMapper.toUserResponse(userRepository.save(user));
     }
 
