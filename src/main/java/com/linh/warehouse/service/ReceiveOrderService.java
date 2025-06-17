@@ -57,6 +57,11 @@ public class ReceiveOrderService {
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<ReceiveOrderItemResponse> itemResponses = new ArrayList<>();
 
+        // ✅ Kiểm tra nếu không có mặt hàng nào được gửi lên
+        if (request.getItems() == null || request.getItems().isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_INPUT, "Đơn nhận hàng phải có ít nhất một mặt hàng.");
+        }
+
         for (ReceiveOrderItemRequest itemReq : request.getItems()) {
             PurchaseOrderItem purchaseItem = purchaseOrderItemRepository.findById(itemReq.getPurchaseOrderItemId())
                     .orElseThrow(() -> new AppException(ErrorCode.PURCHASE_ORDER_ITEM_NOT_FOUND));

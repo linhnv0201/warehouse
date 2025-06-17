@@ -42,6 +42,7 @@ public enum ErrorCode {
     INVALID_PAYMENT_AMOUNT(1030, "Invalid Payment Amount"),
     PAYMENT_EXCEEDS_TOTAL(1031, "Payment Exceeds Total"),
     INVALID_REQUEST(1032, "Invalid Request"),
+    INVALID_INPUT(1033, "Invalid Input"),
     ;
      int code;
      String message;
