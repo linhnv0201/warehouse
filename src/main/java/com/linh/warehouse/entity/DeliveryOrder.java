@@ -33,7 +33,5 @@ public class DeliveryOrder {
     @Column(name = "created_at")
     LocalDateTime createdAt;
 
-    @Column(name = "status", nullable = false, length = 50)
-    String status;
 }
 

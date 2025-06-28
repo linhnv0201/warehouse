@@ -50,7 +50,6 @@ public class DeliveryOrderService {
         deliveryOrder.setCreatedAt(LocalDateTime.now());
         deliveryOrder.setSalesOrder(salesOrder);
         deliveryOrder.setCreatedBy(createdBy);
-        deliveryOrder.setStatus("PENDING");
         deliveryOrder = deliveryOrderRepository.save(deliveryOrder);
 
         BigDecimal totalAmount = BigDecimal.ZERO;
@@ -62,6 +61,7 @@ public class DeliveryOrderService {
             int delivered = deliveryOrderItemRepository.getTotalDeliveredQuantity(salesItem.getId());
             int toDeliver = itemReq.getQuantity();
             int orderQty = salesItem.getQuantity();
+
             if (delivered + toDeliver > orderQty) {
                 throw new AppException(ErrorCode.QUANTITY_EXCEEDS_SALES_ORDER,
                         String.format("Tổng số lượng giao (%d) vượt quá số lượng đặt (%d) cho sản phẩm %s",
@@ -69,22 +69,26 @@ public class DeliveryOrderService {
             }
 
             Inventory inv = salesItem.getInventory();
-            if (inv.getQuantityAvailable() < toDeliver) {
+
+            if (inv.getQuantity() < toDeliver || inv.getQuantityReserved() < toDeliver) {
                 throw new AppException(ErrorCode.INSUFFICIENT_INVENTORY,
-                        "Không đủ hàng trong kho để giao sản phẩm: " + inv.getProductCode());
+                        "Không đủ hàng đã đặt để giao sản phẩm: " + inv.getProductCode());
             }
 
+            // Tạo DeliveryOrderItem
             DeliveryOrderItem dItem = new DeliveryOrderItem();
             dItem.setDeliveryOrder(deliveryOrder);
             dItem.setSalesOrderItem(salesItem);
             dItem.setQuantity(toDeliver);
             deliveryOrderItemRepository.save(dItem);
 
+            // Cập nhật tồn kho (chỉ trừ quantity và reserved, không đụng quantityAvailable)
             inv.setQuantity(inv.getQuantity() - toDeliver);
-            inv.setQuantityAvailable(inv.getQuantityAvailable() - toDeliver);
+            inv.setQuantityReserved(inv.getQuantityReserved() - toDeliver);
             inv.setLastUpdated(LocalDateTime.now());
             inventoryRepository.save(inv);
 
+            // Tính tiền
             BigDecimal price = salesItem.getSaleUnitPrice();
             BigDecimal taxRate = inv.getTaxRate() != null ? inv.getTaxRate() : BigDecimal.ZERO;
             BigDecimal taxMultiplier = BigDecimal.ONE.add(taxRate.divide(BigDecimal.valueOf(100)));
@@ -92,6 +96,7 @@ public class DeliveryOrderService {
             totalAmount = totalAmount.add(itemTotal);
         }
 
+        // Tạo hóa đơn
         SaleInvoice invoice = new SaleInvoice();
         invoice.setCode(generateSaleInvoiceCode());
         invoice.setDeliveryOrder(deliveryOrder);
@@ -101,15 +106,14 @@ public class DeliveryOrderService {
         invoice.setCreatedAt(LocalDateTime.now());
         saleInvoiceRepository.save(invoice);
 
-        updateOrderStatusIfCompleted(deliveryOrder.getSalesOrder().getId());
+        updateOrderStatusIfCompleted(salesOrderId);
 
         return toDeliveryOrderResponse(deliveryOrder);
     }
 
-
-    private DeliveryOrderResponse toDeliveryOrderResponse(DeliveryOrder do_) {
+    private DeliveryOrderResponse toDeliveryOrderResponse(DeliveryOrder deliveryOrder) {
         List<DeliveryOrderItemResponse> items = deliveryOrderItemRepository
-                .findByDeliveryOrderId(do_.getId())
+                .findByDeliveryOrderId(deliveryOrder.getId())
                 .stream()
                 .map(it -> {
                     SalesOrderItem si = it.getSalesOrderItem();
@@ -137,21 +141,21 @@ public class DeliveryOrderService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return DeliveryOrderResponse.builder()
-                .id(do_.getId())
-                .code(do_.getCode())
-                .warehouseName(do_.getSalesOrder().getWarehouse().getName())
-                .customerName(do_.getSalesOrder().getCustomer().getName())
-                .createdBy(do_.getCreatedBy().getFullname())
-                .createdAt(do_.getCreatedAt())
+                .id(deliveryOrder.getId())
+                .code(deliveryOrder.getCode())
+                .warehouseName(deliveryOrder.getSalesOrder().getWarehouse().getName())
+                .customerName(deliveryOrder.getSalesOrder().getCustomer().getName())
+                .createdBy(deliveryOrder.getCreatedBy().getFullname())
+                .createdAt(deliveryOrder.getCreatedAt())
                 .items(items)
                 .totalAmount(totalAmount)
                 .build();
     }
 
     public DeliveryOrderResponse getById(int id) {
-        DeliveryOrder do_ = deliveryOrderRepository.findById(id)
+        DeliveryOrder deliveryOrder = deliveryOrderRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.DELIVERY_ORDER_NOT_FOUND));
-        return toDeliveryOrderResponse(do_);
+        return toDeliveryOrderResponse(deliveryOrder);
     }
 
     public List<DeliveryOrderResponse> getBySalesOrderId(Integer salesOrderId) {

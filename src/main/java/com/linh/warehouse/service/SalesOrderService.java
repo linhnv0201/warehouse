@@ -20,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -61,6 +62,9 @@ public class SalesOrderService {
             Inventory inventory = inventoryRepository.findById(itemReq.getInventoryId())
                     .orElseThrow(() -> new AppException(ErrorCode.INVENTORY_NOT_FOUND));
 
+        if (inventory.getQuantityAvailable() < itemReq.getQuantity()){
+            throw new AppException(ErrorCode.INSUFFICIENT_INVENTORY);
+        }
             SalesOrderItem item = new SalesOrderItem();
             item.setSalesOrder(savedOrder);
             item.setInventory(inventory);
@@ -71,7 +75,6 @@ public class SalesOrderService {
 
         salesOrderItemRepository.saveAll(items);
 
-        // Tính tổng tiền có VAT
         BigDecimal totalPrice = items.stream()
                 .map(i -> {
                     Inventory inv = i.getInventory();
@@ -180,10 +183,10 @@ public class SalesOrderService {
                 int available = inventory.getQuantityAvailable();
                 int required = item.getQuantity();
 
-                if (available < required) {
-                    throw new AppException(ErrorCode.INSUFFICIENT_INVENTORY,
-                            "Sản phẩm ID " + inventory.getId() + " không đủ tồn kho để duyệt đơn.");
-                }
+//                if (available < required) {
+//                    throw new AppException(ErrorCode.INSUFFICIENT_INVENTORY,
+//                            "Sản phẩm ID " + inventory.getId() + " không đủ tồn kho để duyệt đơn.");
+//                }
 
                 inventory.setQuantityAvailable(available - required);
                 inventory.setQuantityReserved(inventory.getQuantityReserved() + required);
