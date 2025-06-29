@@ -86,6 +86,7 @@ public class DeliveryOrderService {
             inv.setQuantity(inv.getQuantity() - toDeliver);
             inv.setQuantityReserved(inv.getQuantityReserved() - toDeliver);
             inv.setLastUpdated(LocalDateTime.now());
+            inv.setSold(inv.getSold() + toDeliver);
             inventoryRepository.save(inv);
 
             // Tính tiền

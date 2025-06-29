@@ -103,6 +103,7 @@ public class ReceiveOrderService {
                 inventory.setQuantity(toReceive);
                 inventory.setQuantityAvailable(toReceive);
                 inventory.setQuantityReserved(0);
+                inventory.setSold(0);
                 inventory.setUnit(purchaseItem.getProduct().getUnit());
                 inventory.setUnitPrice(purchaseItem.getUnitPrice());
                 inventory.setTaxRate(purchaseItem.getTaxRate());

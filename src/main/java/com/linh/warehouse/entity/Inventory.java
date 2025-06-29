@@ -43,6 +43,9 @@ public class Inventory {
     @Column(name = "quantityReserved")
     int quantityReserved;
 
+    @Column(name = "sold")
+    int sold;
+
     @Column(name = "unit", length = 50)
     String unit;
 

@@ -20,6 +20,7 @@ public class InventoryResponse {
     int quantity;
     int quantityAvailable;
     int quantityReserved;
+    int sold;
     String unit;
     BigDecimal unitPrice;
     BigDecimal taxRate;
