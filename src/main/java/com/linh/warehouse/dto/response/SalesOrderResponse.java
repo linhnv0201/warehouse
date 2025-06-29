@@ -25,6 +25,7 @@ public class SalesOrderResponse {
     String approvedBy;
     LocalDateTime approvedAt;
     BigDecimal totalPrice;
+    BigDecimal estimatedProfit;
 
     List<SalesOrderItemResponse> items;
 

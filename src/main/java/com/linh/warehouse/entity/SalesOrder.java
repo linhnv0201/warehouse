@@ -53,4 +53,8 @@ public class SalesOrder {
 
     @Column(name = "status", nullable = false, length = 50)
     String status;
+
+    @Column(name = "estimated_profit")
+    private BigDecimal estimatedProfit;
+
 }
