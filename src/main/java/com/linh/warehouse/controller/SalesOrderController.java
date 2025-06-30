@@ -23,7 +23,7 @@ public class SalesOrderController {
 
     SalesOrderService salesOrderService;
 
-    @PreAuthorize("hasAnyRole('MANAGER', 'SALES')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'PURCHASER')")
     @PostMapping
     public ApiResponse<SalesOrderResponse> createSalesOrder(
             @RequestBody @Valid SalesOrderCreationRequest request) {
