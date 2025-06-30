@@ -20,7 +20,7 @@ public class PurchaseOrderController {
 
     PurchaseOrderService purchaseOrderService;
 
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'PURCHASER')")
     @PostMapping
     public ApiResponse<PurchaseOrderResponse> createPurchaseOrder(@RequestBody PurchaseOrderCreationRequest request) {
         PurchaseOrderResponse response = purchaseOrderService.createPurchaseOrder(request);
