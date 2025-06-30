@@ -13,7 +13,7 @@ public interface InventoryRepository extends JpaRepository<Inventory, Integer> {
     List<Inventory> findByWarehouseId(Integer warehouseId);
     Optional<Inventory> findByWarehouseIdAndProductCode(Integer warehouseId, String productCode);
     List<Inventory> findByProductCode(String productCode);
-    @Query("SELECT SUM(i.quantity) FROM Inventory i")
-    Long getTotalStock();
+    List<Inventory> findTop5ByOrderBySoldDesc();
+    List<Inventory> findAllByOrderBySoldDesc();
 
 }

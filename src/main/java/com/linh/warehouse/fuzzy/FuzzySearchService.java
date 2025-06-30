@@ -12,11 +12,11 @@ import java.util.regex.Pattern;
 @Service
 public class FuzzySearchService {
 
-    private final ProductRepository productRepo;
+    private final ProductRepository productRepository;
     private final JaroWinklerSimilarity similarity = new JaroWinklerSimilarity();
 
-    public FuzzySearchService(ProductRepository productRepo) {
-        this.productRepo = productRepo;
+    public FuzzySearchService(ProductRepository productRepository) {
+        this.productRepository = productRepository;
     }
 
     private static final Map<String, List<String>> SYNONYMS = Map.ofEntries(
@@ -71,7 +71,7 @@ public class FuzzySearchService {
                         .forEach(expandedTokens::add);
             }
 
-            List<Product> fuzzyResults = productRepo.findAll().stream()
+            List<Product> fuzzyResults = productRepository.findAll().stream()
                     .map(product -> {
                         String name = removeVietnameseDiacritics(product.getName().toLowerCase());
                         String desc = removeVietnameseDiacritics(
@@ -130,7 +130,7 @@ public class FuzzySearchService {
                 .orElse(0.0);
     }
     private List<Product> fallbackProducts(int topK) {
-        List<Product> all = productRepo.findAll();
+        List<Product> all = productRepository.findAll();
         Collections.shuffle(all);
         return all.stream().limit(topK).toList();
     }

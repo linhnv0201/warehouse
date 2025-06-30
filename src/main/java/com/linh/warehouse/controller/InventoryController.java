@@ -30,6 +30,25 @@ public class InventoryController {
         return ApiResponse.<List<InventoryResponse>>builder()
                 .message("Lấy all inventories của 1 warehouse")
                 .result(inventoryService.getInventoriesByWarehouse(warehouseId))
-                .build();    }
+                .build();
+    }
+
+    @GetMapping("/best-sellers/top5")
+    public ApiResponse<List<InventoryResponse>> getTop5BestSellers() {
+        return ApiResponse.<List<InventoryResponse>>builder()
+                .message("Top 5 sản phẩm bán chạy nhất")
+                .result(inventoryService.getTop5BestSellers())
+                .build();
+    }
+
+    @GetMapping("/best-sellers")
+    public ApiResponse<List<InventoryResponse>> getAllBestSellers() {
+        return ApiResponse.<List<InventoryResponse>>builder()
+                .message("Danh sách tất cả sản phẩm bán chạy nhất")
+                .result(inventoryService.getAllBestSellers())
+                .build();
+    }
+
+
 }
 

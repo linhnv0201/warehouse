@@ -34,5 +34,18 @@ public class InventoryService {
                 .toList();
     }
 
+    public List<InventoryResponse> getTop5BestSellers() {
+        return inventoryRepository.findTop5ByOrderBySoldDesc().stream()
+                .map(inventoryMapper::toInventoryResponse)
+                .toList();
+    }
+
+    public List<InventoryResponse> getAllBestSellers() {
+        return inventoryRepository.findAllByOrderBySoldDesc().stream()
+                .map(inventoryMapper::toInventoryResponse)
+                .toList();
+    }
+
+
 }
 

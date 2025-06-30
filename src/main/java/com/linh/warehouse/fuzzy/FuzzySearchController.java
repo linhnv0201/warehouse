@@ -20,6 +20,6 @@ public class FuzzySearchController {
 
     @GetMapping("/fuzzy-search")
     public List<Product> search(@RequestParam String query) {
-        return fuzzySearchService.search(query, 3);
+        return fuzzySearchService.search(query, 5);
     }
 }
