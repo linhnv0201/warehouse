@@ -68,7 +68,6 @@ public class ProductController {
     }
 
     @GetMapping("/supplier/{supplierId}")
-    @PreAuthorize("hasAnyRole('MANAGER', 'PURCHASER')")
     public ApiResponse<List<ProductResponse>> getProductsBySupplier(@PathVariable Integer supplierId) {
         List<ProductResponse> products = productService.getProductsBySupplier(supplierId);
         return ApiResponse.<List<ProductResponse>>builder()

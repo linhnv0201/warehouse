@@ -6,6 +6,7 @@ import com.linh.warehouse.dto.response.ReceiveOrderResponse;
 import com.linh.warehouse.entity.ReceiveOrder;
 import com.linh.warehouse.service.ReceiveOrderService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +19,7 @@ public class ReceiveOrderController {
     private final ReceiveOrderService receiveOrderService;
 
     @PostMapping("/{purchaseOrderId}")
+    @PreAuthorize("hasAnyRole('MANAGER', 'WAREHOUSE')")
     public ApiResponse<ReceiveOrderResponse> createReceiveOrder(
             @PathVariable Integer purchaseOrderId,
             @RequestBody ReceiveOrderRequest request) {

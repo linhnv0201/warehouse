@@ -24,7 +24,6 @@ public class WarehouseController {
 
     WarehouseService warehouseService;
 
-    // CHỈ MANAGER MỚI ĐƯỢC TẠO
     @PreAuthorize("hasRole('MANAGER')")
     @PostMapping
     ApiResponse<WarehouseResponse> createWarehouse(@RequestBody @Valid WarehouseCreationRequest request) {
@@ -33,7 +32,6 @@ public class WarehouseController {
                 .build();
     }
 
-    // CHỈ MANAGER MỚI ĐƯỢC SỬA
     @PreAuthorize("hasRole('MANAGER')")
     @PutMapping("/{id}")
     ApiResponse<WarehouseResponse> updateWarehouse(@PathVariable Integer id,
@@ -43,7 +41,6 @@ public class WarehouseController {
                 .build();
     }
 
-    // AI CŨNG XEM ĐƯỢC
     @PreAuthorize("hasAnyRole('MANAGER', 'PURCHASER', 'WAREHOUSE', 'ACCOUNTANT')")
     @GetMapping
     ApiResponse<List<WarehouseResponse>> getAllWarehouses() {
@@ -52,7 +49,6 @@ public class WarehouseController {
                 .build();
     }
 
-    // AI CŨNG XEM ĐƯỢC
     @PreAuthorize("hasAnyRole('MANAGER', 'PURCHASER', 'WAREHOUSE', 'ACCOUNTANT')")
     @GetMapping("/{id}")
     ApiResponse<WarehouseResponse> getWarehouseById(@PathVariable Integer id) {
@@ -61,7 +57,6 @@ public class WarehouseController {
                 .build();
     }
 
-    // CHỈ MANAGER MỚI ĐƯỢC XÓA
     @PreAuthorize("hasRole('MANAGER')")
     @DeleteMapping("/{id}")
     String deleteWarehouse(@PathVariable Integer id) {

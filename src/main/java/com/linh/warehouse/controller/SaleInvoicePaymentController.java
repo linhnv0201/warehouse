@@ -8,6 +8,7 @@ import com.linh.warehouse.service.SaleInvoicePaymentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,6 +22,7 @@ public class SaleInvoicePaymentController {
     private final SaleInvoicePaymentService saleInvoicePaymentService;
 
     @PostMapping("/{id}")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ACCOUNTANT')")
     public ApiResponse<SaleInvoicePaymentResponse> createPayment(
             @PathVariable Integer id,
             @RequestBody SaleInvoicePaymentRequest request

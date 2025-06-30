@@ -5,6 +5,7 @@ import com.linh.warehouse.dto.request.DeliveryOrderRequest;
 import com.linh.warehouse.dto.response.DeliveryOrderResponse;
 import com.linh.warehouse.service.DeliveryOrderService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +18,7 @@ public class DeliveryOrderController {
     private final DeliveryOrderService deliveryOrderService;
 
     @PostMapping("/{salesOrderId}")
+    @PreAuthorize("hasAnyRole('MANAGER', 'WAREHOUSE')")
     public ApiResponse<DeliveryOrderResponse> createDeliveryOrder(
             @PathVariable Integer salesOrderId,
             @RequestBody DeliveryOrderRequest request) {

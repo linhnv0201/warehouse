@@ -22,7 +22,7 @@ public class CustomerController {
     CustomerService customerService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('MANAGER', 'PURCHASER')")
+    @PreAuthorize("hasAnyRole('MANAGER')")
     public ApiResponse<CustomerResponse> createCustomer(@RequestBody CustomerCreationRequest request) {
         return ApiResponse.<CustomerResponse>builder()
                 .message("Tạo thành công")
@@ -31,7 +31,7 @@ public class CustomerController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MANAGER', 'PURCHASER')")
+    @PreAuthorize("hasAnyRole('MANAGER')")
     public ApiResponse<CustomerResponse> updateCustomer(
             @PathVariable Integer id,
             @RequestBody CustomerUpdateRequest request) {
@@ -57,7 +57,7 @@ public class CustomerController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MANAGER', 'PURCHASER')")
+    @PreAuthorize("hasAnyRole('MANAGER')")
     public ApiResponse<Void> deleteCustomer(@PathVariable Integer id) {
         customerService.deleteCustomer(id); // hàm này là void
         return ApiResponse.<Void>builder()
