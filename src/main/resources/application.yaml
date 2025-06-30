@@ -6,7 +6,7 @@ server:
 spring:
   datasource:
 #    url: "jdbc:mysql://localhost:3308/dms"
-    url: "jdbc:mysql://root:djmKscHRybNghuruePZFgPbdncEMibEv@mysql.railway.internal:3306/railway"
+    url: "jdbc:mysql://root:djmKscHRybNghuruePZFgPbdncEMibEv@nozomi.proxy.rlwy.net:18762/railway"
     username: root
 #    password: root
     password: djmKscHRybNghuruePZFgPbdncEMibEv
