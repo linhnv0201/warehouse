@@ -20,59 +20,57 @@ public class FuzzySearchService {
     }
 
     private static final Map<String, List<String>> SYNONYMS = Map.ofEntries(
-            Map.entry("ao", List.of("áo", "shirt", "top", "tee", "tshirt", "áo thun", "áo phông", "áo ngắn tay", "áo tay dài", "áo in hình", "áo cotton")),
-            Map.entry("quan", List.of("quần", "pants", "trousers", "jeans", "short", "quần vải", "quần dài", "quần tây", "quần ống rộng", "quần ống suông")),
-            Map.entry("vay", List.of("váy", "đầm", "dress", "gown", "skirt", "váy liền", "váy công sở", "váy dự tiệc", "váy suông", "váy xòe", "váy ôm", "váy yếm")),
-            Map.entry("short", List.of("quần short", "short", "quần đùi", "quần ngắn", "short jeans",
-                                                "quần lưng cao", "quần lưng thấp", "quần short thể thao", "quần short nữ")),
-            Map.entry("hoodie", List.of("hoodie", "áo hoodie", "áo khoác mũ", "áo nỉ có mũ", "áo trùm đầu", "hoodie nỉ", "hoodie oversize")),
-            Map.entry("bo", List.of("bò", "jean", "denim", "quần bò", "áo bò", "váy bò", "vải denim", "skinny jean", "baggy jeans", "jeans trắng", "quần jean", "short jean")),
-            Map.entry("somi", List.of("áo sơ mi", "sơ mi", "shirt", "áo sơ mi cổ tàu", "áo sơ mi tay phồng", "sơ mi denim", "áo sơ mi trắng")),
-            Map.entry("thun", List.of("thun", "cotton", "co giãn", "áo thun", "áo phông", "t-shirt", "áo cổ tròn", "áo thun in hình")),
-            Map.entry("the thao", List.of("thể thao", "gym", "jogger", "legging", "tanktop", "tập gym", "tập thể dục", "chạy bộ", "training")),
-            Map.entry("ni", List.of("nỉ", "ni", "fleece", "warm", "giữ ấm", "chống lạnh", "áo khoác nỉ")),
-            Map.entry("kaki", List.of("kaki", "khaki", "quần kaki", "áo kaki", "chất kaki")),
-            Map.entry("len", List.of("len", "wool", "len tăm", "áo len", "cardigan", "len mềm", "áo giữ ấm", "sweater")),
-            Map.entry("khoac", List.of("áo khoác", "jacket", "bomber", "khoác gió", "windbreaker", "khoác dạ", "khoác 2 lớp", "khoác hoodie")),
-            Map.entry("mu", List.of("mũ", "nón", "hat", "cap", "mũ lưỡi trai", "nón rộng vành", "nón bucket", "mũ len")),
-            Map.entry("giay", List.of("giày", "giay", "shoes", "sneaker", "boot", "giày thể thao", "giày cao gót", "giày da", "giày lười")),
-            Map.entry("dep", List.of("dép", "dep", "slipper", "sandals", "dép lê", "dép quai hậu", "dép bản to")),
-            Map.entry("khau", List.of("khẩu trang", "mask", "face mask", "che mặt", "khau trang")),
-            Map.entry("trang", List.of("trắng", "white", "màu trắng")),
-            Map.entry("den", List.of("đen", "black", "màu đen")),
-            Map.entry("xanh", List.of("xanh", "blue", "green", "màu xanh")),
-            Map.entry("do", List.of("đỏ", "do", "red", "màu đỏ")),
-            Map.entry("vang", List.of("vàng", "vang", "yellow", "màu vàng")),
-            Map.entry("nu", List.of("nữ", "nữ tính", "women", "lady", "girl")),
-            Map.entry("nam", List.of("nam", "men", "man", "boy", "nam tính")),
+            Map.entry("ao", List.of("ao", "shirt", "top", "tee", "tshirt", "ao thun", "ao phong")),
+            Map.entry("quan", List.of("quan", "pants", "jeans", "short", "quan vai", "quan tay")),
+            Map.entry("vay", List.of("vay", "dam", "dress", "skirt", "vay lien", "vay xoe")),
+            Map.entry("short", List.of("short", "quan short", "quan dui")),
+            Map.entry("hoodie", List.of("hoodie", "ao hoodie", "ao khoac mu")),
+            Map.entry("bo", List.of("bo", "jean", "denim", "quan bo", "ao bo", "vay bo")),
+            Map.entry("somi", List.of("somi", "so mi", "shirt", "ao so mi")),
+            Map.entry("thun", List.of("thun", "cotton", "ao thun", "ao phong")),
+            Map.entry("the thao", List.of("the thao", "gym", "jogger", "legging", "tanktop")),
+            Map.entry("ni", List.of("ni", "fleece", "warm", "ao ni")),
+            Map.entry("kaki", List.of("kaki", "khaki", "quan kaki", "ao kaki")),
+            Map.entry("len", List.of("len", "wool", "ao len", "cardigan")),
+            Map.entry("khoac", List.of("khoac", "jacket", "bomber", "ao khoac")),
+            Map.entry("mu", List.of("mu", "non", "hat", "cap")),
+            Map.entry("giay", List.of("giay", "shoes", "sneaker", "boot")),
+            Map.entry("dep", List.of("dep", "slipper", "sandals")),
+            Map.entry("khau", List.of("khau", "mask", "face mask")),
+            Map.entry("trang", List.of("trang", "white")),
+            Map.entry("den", List.of("den", "black")),
+            Map.entry("xanh", List.of("xanh", "blue", "green")),
+            Map.entry("do", List.of("do", "red")),
+            Map.entry("vang", List.of("vang", "yellow")),
+            Map.entry("nu", List.of("nu", "lady", "girl")),
+            Map.entry("nam", List.of("nam", "men", "boy")),
 
-            Map.entry("cotton", List.of("cotton", "vải cotton", "chất cotton", "co giãn", "thoáng mát", "vải thun")),
-            Map.entry("satin", List.of("satin", "lụa", "bóng", "mượt", "vải mềm", "dự tiệc")),
-            Map.entry("linen", List.of("linen", "vải lanh", "nhẹ", "mát", "vải tự nhiên", "chống nóng")),
+            Map.entry("cotton", List.of("cotton", "vai cotton")),
+            Map.entry("satin", List.of("satin", "lua")),
+            Map.entry("linen", List.of("linen", "vai lanh")),
 
-            Map.entry("form rong", List.of("form rộng", "oversize", "dáng rộng", "unisex", "thùng thình")),
-            Map.entry("form om", List.of("form ôm", "slim fit", "body fit", "dáng ôm sát", "tight")),
-            Map.entry("form suong", List.of("form suông", "dáng suông", "regular fit", "dáng thẳng")),
+            Map.entry("form rong", List.of("form rong", "oversize")),
+            Map.entry("form om", List.of("form om", "slim fit")),
+            Map.entry("form suong", List.of("form suong", "regular fit")),
 
-            Map.entry("con ho", List.of("con hổ", "tiger", "in hổ", "hoạ tiết con hổ")),
-            Map.entry("hoa", List.of("hoa", "hoạ tiết hoa", "hoa nhí", "hoa văn")),
-            Map.entry("trơn", List.of("trơn", "không họa tiết", "basic", "đơn giản")),
+            Map.entry("con ho", List.of("con ho", "tiger")),
+            Map.entry("hoa", List.of("hoa", "hoa tiet")),
+            Map.entry("tron", List.of("tron", "basic")),
 
-            Map.entry("maxi", List.of("maxi", "váy dài", "dài chấm gót", "váy maxi", "dáng dài")),
-            Map.entry("body", List.of("body", "ôm sát", "váy ôm", "gợi cảm")),
-            Map.entry("baby", List.of("babydoll", "cổ sen", "dáng xòe nhẹ", "dễ thương", "form baby doll")),
+            Map.entry("maxi", List.of("maxi", "vay dai")),
+            Map.entry("body", List.of("body", "om sat")),
+            Map.entry("baby", List.of("babydoll", "form baby")),
 
-            Map.entry("polo", List.of("polo", "áo cổ bẻ", "áo có cổ", "áo polo")),
-            Map.entry("tanktop", List.of("tanktop", "áo ba lỗ", "không tay", "tập gym", "chạy bộ")),
-            Map.entry("jogger", List.of("jogger", "quần jogger", "ống bo", "quần thể thao", "bo gấu")),
-            Map.entry("legging", List.of("legging", "quần ôm sát", "quần tập gym", "quần thể thao nữ")),
-            Map.entry("bra", List.of("bra", "bralette", "áo lót", "áo trong", "không gọng")),
+            Map.entry("polo", List.of("polo", "ao co", "ao polo")),
+            Map.entry("tanktop", List.of("tanktop", "ao ba lo")),
+            Map.entry("jogger", List.of("jogger", "quan jogger")),
+            Map.entry("legging", List.of("legging", "quan om")),
+            Map.entry("bra", List.of("bra", "ao lot", "bralette")),
 
-            Map.entry("con meo", List.of("con mèo", "mèo", "cat", "in mèo", "hình mèo")),
+            Map.entry("con meo", List.of("con meo", "meo", "cat")),
+            Map.entry("phong cach", List.of("phong cach", "style", "casual"))
+    );
 
-            Map.entry("phong cach", List.of("phong cách", "style", "casual", "công sở", "dự tiệc", "trẻ trung", "cổ điển", "năng động"))
-
-            );
 
 
     public static String removeVietnameseDiacritics(String input) {
@@ -116,7 +114,6 @@ public class FuzzySearchService {
                         double finalScore = name.length() < 20
                                 ? (0.25 * nameScore + 0.75 * descScore)
                                 : (0.75 * nameScore + 0.25 * descScore);
-
 
                         return new ScoredProduct(product, finalScore);
                     })
